@@ -1,0 +1,98 @@
+[
+  {
+    "id": "SYN-PH-001",
+    "timestamp": "2026-03-10T13:22:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "recipient": "demo.user04@example.com",
+      "url": "https://sso.login.example/reset",
+      "clicked": true,
+      "delivered": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "Mailbox demo.user04@example.com opened https://sso.login.example/reset. Demo URL reputation is malicious."
+    },
+    "iocs": [
+      {"type": "url", "value": "https://sso.login.example/reset", "reputation": "malicious"},
+      {"type": "domain", "value": "sso.login.example", "reputation": "malicious"}
+    ]
+  },
+  {
+    "id": "SYN-PH-002",
+    "timestamp": "2026-03-10T13:48:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "recipient": "demo.user05@example.com",
+      "url": "https://payroll.example/update",
+      "clicked": false,
+      "delivered": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "Malicious payroll URL delivered to demo.user05@example.com. No click recorded."
+    },
+    "iocs": [
+      {"type": "url", "value": "https://payroll.example/update", "reputation": "malicious"},
+      {"type": "domain", "value": "payroll.example", "reputation": "malicious"}
+    ]
+  },
+  {
+    "id": "SYN-PH-003",
+    "timestamp": "2026-03-10T15:10:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "recipient": "demo.user06@example.net",
+      "url": "https://benefits.example.net/enroll",
+      "clicked": false,
+      "delivered": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "Suspicious benefits URL quarantined before delivery to demo.user06@example.net."
+    },
+    "iocs": [
+      {"type": "url", "value": "https://benefits.example.net/enroll", "reputation": "suspicious"},
+      {"type": "domain", "value": "benefits.example.net", "reputation": "suspicious"}
+    ]
+  },
+  {
+    "id": "SYN-PH-004",
+    "timestamp": "2026-03-11T08:16:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "recipient": "demo.user08@example.org",
+      "url": "https://cdn.example.org/doc",
+      "clicked": false,
+      "delivered": false,
+      "allowlisted": false,
+      "context_complete": false,
+      "summary": "URL removed from a message to demo.user08@example.org. Reputation feed returned unknown."
+    },
+    "iocs": [
+      {"type": "url", "value": "https://cdn.example.org/doc", "reputation": "unknown"},
+      {"type": "domain", "value": "cdn.example.org", "reputation": "unknown"}
+    ]
+  },
+  {
+    "id": "SYN-PH-005",
+    "timestamp": "2026-03-11T09:30:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "recipient": "demo.user09@example.com",
+      "url": "https://training.example/phish-drill",
+      "clicked": true,
+      "delivered": true,
+      "allowlisted": true,
+      "allowlist_name": "awareness-drill",
+      "context_complete": true,
+      "summary": "Allowlisted awareness drill at https://training.example/phish-drill sent to demo.user09@example.com."
+    },
+    "iocs": [
+      {"type": "url", "value": "https://training.example/phish-drill", "reputation": "allowlisted"},
+      {"type": "domain", "value": "training.example", "reputation": "allowlisted"}
+    ]
+  }
+]

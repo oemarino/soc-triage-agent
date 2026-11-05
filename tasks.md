@@ -8,7 +8,7 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
   Create Python package layout, `pyproject.toml`, README stub, `.env.example`, `.gitignore`, mirror safety rules for Cursor.  
   **Done when:** `pytest` runs (empty/pass), package imports, README explains how to run later.
 
-- [ ] **T2 — Alert schema + fixtures**  
+- [x] **T2 — Alert schema + fixtures**  
   Pydantic `Alert` model; ≥20 synthetic alerts across ≥5 categories; `fixtures/labels.json` for a subset.  
   **Done when:** fixtures validate against model; loader tested.
 

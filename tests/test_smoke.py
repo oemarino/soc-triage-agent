@@ -10,28 +10,34 @@ import soc_triage
 from soc_triage.cli import app, safety_banner
 from typer.testing import CliRunner
 
-MODULES = (
-    "soc_triage.models",
-    "soc_triage.ingest",
-    "soc_triage.rules",
-    "soc_triage.notes",
-    "soc_triage.report",
-    "soc_triage.cli",
-    "soc_triage.eval",
-)
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_package_version() -> None:
     assert soc_triage.__version__
+    assert soc_triage.Alert.__name__ == "Alert"
 
 
-def test_stub_modules_import_and_name_their_task() -> None:
-    for name in MODULES:
+def test_schema_modules_import() -> None:
+    import soc_triage.ingest
+    import soc_triage.models
+
+    assert soc_triage.models.Alert is soc_triage.Alert
+    assert callable(soc_triage.ingest.load_alerts)
+
+
+def test_remaining_stubs_name_their_task() -> None:
+    for name in (
+        "soc_triage.rules",
+        "soc_triage.notes",
+        "soc_triage.report",
+        "soc_triage.cli",
+        "soc_triage.eval",
+    ):
         module = importlib.import_module(name)
         assert isinstance(module.TODO, str)
         assert module.TODO.startswith("T")
+        assert module.TODO != "T2"
 
 
 def test_cli_help_lists_later_commands() -> None:
@@ -47,7 +53,8 @@ def test_safety_banner_states_synthetic_and_human_review() -> None:
     assert "human" in text
 
 
-def test_labels_placeholder() -> None:
+def test_labels_file_is_documented_json() -> None:
     data = json.loads((ROOT / "fixtures" / "labels.json").read_text(encoding="utf-8"))
-    assert data["labels"] == []
+    assert isinstance(data["labels"], list)
+    assert data["labels"]
     assert "synthetic" in data["description"].lower()

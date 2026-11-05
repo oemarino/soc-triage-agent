@@ -1,5 +1,23 @@
 {
+  "version": 1,
   "dataset": "synthetic-soc-triage",
-  "description": "Ground-truth severity labels for eval. Placeholder until T2. Each entry will map one synthetic alert id to critical, high, medium, low, or info. Synthetic alerts only — never real PII.",
-  "labels": []
+  "description": "Hand-authored ground truth for a subset of fixtures/alerts. Each entry maps one synthetic alert id to critical, high, medium, low, or info. Synthetic demo data only — never real PII.",
+  "provenance": "Written for this repository in T2. External addresses are RFC 5737 documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24). Names use RFC 2606 example domains. File hashes are repeated-nibble placeholders, not observed malware.",
+  "labels": [
+    {"id": "SYN-BF-001", "severity": "critical"},
+    {"id": "SYN-BF-002", "severity": "high"},
+    {"id": "SYN-BF-003", "severity": "medium"},
+    {"id": "SYN-LM-001", "severity": "critical"},
+    {"id": "SYN-LM-003", "severity": "medium"},
+    {"id": "SYN-LM-005", "severity": "info"},
+    {"id": "SYN-MH-001", "severity": "critical"},
+    {"id": "SYN-MH-002", "severity": "high"},
+    {"id": "SYN-MH-004", "severity": "low"},
+    {"id": "SYN-PH-001", "severity": "critical"},
+    {"id": "SYN-PH-002", "severity": "high"},
+    {"id": "SYN-PH-005", "severity": "info"},
+    {"id": "SYN-PN-001", "severity": "info"},
+    {"id": "SYN-PN-003", "severity": "low"},
+    {"id": "SYN-PN-004", "severity": "medium"}
+  ]
 }

@@ -1,0 +1,104 @@
+[
+  {
+    "id": "SYN-LM-001",
+    "timestamp": "2026-03-11T03:40:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "demo.admin02",
+      "src_ip": "203.0.113.50",
+      "dest_host_count": 14,
+      "remote_service_count": 14,
+      "account_new": true,
+      "off_hours": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "demo.admin02, created the same day, reached 14 demo hosts from 203.0.113.50 outside the change window."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "203.0.113.50", "reputation": "malicious"}
+    ]
+  },
+  {
+    "id": "SYN-LM-002",
+    "timestamp": "2026-03-11T04:12:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "demo.user07",
+      "src_ip": "198.51.100.70",
+      "dest_host_count": 6,
+      "admin_share_connections": 6,
+      "account_new": false,
+      "off_hours": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "demo.user07 opened admin shares on 6 demo hosts from 198.51.100.70."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "198.51.100.70", "reputation": "suspicious"}
+    ]
+  },
+  {
+    "id": "SYN-LM-003",
+    "timestamp": "2026-03-11T14:05:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "demo.user03",
+      "src_ip": "192.0.2.33",
+      "src_host": "wrk-demo-12.example.com",
+      "dest_host": "srv-demo-03.example.com",
+      "dest_host_count": 1,
+      "remote_logon_count": 1,
+      "off_hours": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "One remote desktop session from wrk-demo-12.example.com to srv-demo-03.example.com by demo.user03."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.33", "reputation": "unknown"}
+    ]
+  },
+  {
+    "id": "SYN-LM-004",
+    "timestamp": "2026-03-11T14:44:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "demo.admin04",
+      "src_ip": "192.0.2.14",
+      "src_host": "jump-demo-01.example.com",
+      "dest_host": "srv-demo-04.example.com",
+      "dest_host_count": 1,
+      "remote_logon_count": 1,
+      "off_hours": false,
+      "allowlisted": false,
+      "context_complete": false,
+      "summary": "Remote desktop from jump-demo-01.example.com. The change-ticket field is empty."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.14", "reputation": "unknown"}
+    ]
+  },
+  {
+    "id": "SYN-LM-005",
+    "timestamp": "2026-03-11T17:20:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "svc-patch",
+      "src_ip": "192.0.2.9",
+      "dest_host_count": 8,
+      "file_copy_count": 8,
+      "off_hours": false,
+      "allowlisted": true,
+      "allowlist_name": "patch-window",
+      "context_complete": true,
+      "summary": "Allowlisted svc-patch reached 8 demo hosts during the published change window."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.9", "reputation": "allowlisted"}
+    ]
+  }
+]

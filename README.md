@@ -4,7 +4,7 @@ Portfolio project for a cybersecurity student: a first-pass assistant that ranks
 
 This is a learning and demo repo. It is not a SIEM, and it does not connect to a live security stack.
 
-**Status:** T1 project skeleton is in place. Scoring, fixtures, the CLI demo, and eval land in T2–T6 (`tasks.md`). The `run` and `eval` commands currently print a synthetic-mode banner and point at those tasks.
+**Status:** T2 alert schema and synthetic fixtures are in place. Rules, the CLI demo, and eval are still T3–T5 (`tasks.md`). `soc-triage run` and `soc-triage eval` print a synthetic-mode banner and exit.
 
 ## What the MVP will do
 
@@ -54,44 +54,48 @@ soc-triage --help
 
 `pytest` should pass on a fresh clone with no API keys. `soc-triage run` and `soc-triage eval` are stubs until T4 and T5.
 
+## Fixtures
+
+`fixtures/alerts/` holds 25 hand-authored alerts, five in each seed category: `brute_force`, `phishing_url`, `malware_hash`, `lateral_movement`, and `policy_noise`. Addresses are RFC 5737 documentation IPs. Names use RFC 2606 `example` domains. Hashes are repeated-nibble placeholders, not malware samples.
+
+`fixtures/labels.json` is ground truth for 15 of those alerts, so a later eval can score severity. It is a subset, not a full answer key.
+
+```bash
+python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; print(len(load_alerts(default_alerts_dir())))"
+```
+
 ## Layout
 
 ```
 constitution.md  spec.md  plan.md  tasks.md
 src/soc_triage/     package (models, ingest, rules, notes, report, cli, eval)
 tests/              pytest
-fixtures/alerts/    synthetic alert JSON (empty until T2)
-fixtures/labels.json
+fixtures/alerts/    25 synthetic alerts in five category files
+fixtures/labels.json  severity labels for 15 of those alerts
 .env.example
 .cursor/rules/soc-triage.mdc
 ```
 
-`fixtures/labels.json` is a placeholder:
+Label entries look like this:
 
 ```json
-{
-  "dataset": "synthetic-soc-triage",
-  "description": "…",
-  "labels": []
-}
+{"id": "SYN-BF-001", "severity": "critical"}
 ```
 
-T2 replaces `labels` with entries for a subset of fixture alerts. Each value is a severity: `critical`, `high`, `medium`, `low`, or `info`.
+Severity values are `critical`, `high`, `medium`, `low`, and `info`.
 
 ## Limitations
 
-- T1 only. There is no alert schema, rule engine, ranked report, or eval metric yet.
+- Schema and synthetic fixtures only. There is no rule engine, ranked report, or eval metric yet.
 - No live SIEM, EDR, or ticket write-back (out of scope for the MVP).
 - No automated containment.
 - Not for production security operations. Resume language should match the code, not a production SOC platform.
-- Sample data, once added, is synthetic. Do not drop real alerts into `fixtures/`.
+- Sample data is synthetic. Do not drop real alerts into `fixtures/`.
 
 ## Next step
 
-**T2 — Alert schema + fixtures.** Add the Pydantic `Alert` model, at least 20 synthetic alerts across at least 5 categories, and labels for a subset. Done when fixtures validate and the loader is tested.
-
-Confirm this skeleton first:
+**T3 — Rules engine.** Deterministic severity, confidence, and `reasons[]`, including allowlist downgrades. Done when known fixture alerts map to expected severities in unit tests.
 
 ```bash
-pip install -e ".[dev]" && pytest && soc-triage --help
+pytest
 ```

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "SYN-BF-001",
+    "timestamp": "2026-03-10T02:14:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "demo.user01",
+      "src_ip": "203.0.113.10",
+      "failure_count": 86,
+      "success_after_failures": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "hostname": "edge-demo-01.example.com",
+      "summary": "86 failed logons for demo.user01 from 203.0.113.10, then one success. Account is not allowlisted."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "203.0.113.10", "reputation": "suspicious"}
+    ]
+  },
+  {
+    "id": "SYN-BF-002",
+    "timestamp": "2026-03-10T02:41:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "demo.user02",
+      "src_ip": "198.51.100.23",
+      "failure_count": 42,
+      "success_after_failures": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "hostname": "edge-demo-01.example.com",
+      "summary": "42 failed logons for demo.user02 from 198.51.100.23. No successful logon observed."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "198.51.100.23", "reputation": "suspicious"}
+    ]
+  },
+  {
+    "id": "SYN-BF-003",
+    "timestamp": "2026-03-10T11:05:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "demo.contractor",
+      "src_ip": "192.0.2.15",
+      "failure_count": 12,
+      "success_after_failures": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "hostname": "edge-demo-02.example.com",
+      "summary": "12 failed logons for demo.contractor from 192.0.2.15 over 20 minutes."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.15", "reputation": "unknown"}
+    ]
+  },
+  {
+    "id": "SYN-BF-004",
+    "timestamp": "2026-03-10T16:22:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "demo.user03",
+      "src_ip": "192.0.2.40",
+      "failure_count": 4,
+      "success_after_failures": false,
+      "allowlisted": false,
+      "context_complete": false,
+      "hostname": "edge-demo-02.example.com",
+      "summary": "4 failed logons from 192.0.2.40. Client details are missing, so the picture is incomplete."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.40", "reputation": "unknown"}
+    ]
+  },
+  {
+    "id": "SYN-BF-005",
+    "timestamp": "2026-03-10T18:00:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "svc-scan",
+      "src_ip": "192.0.2.8",
+      "failure_count": 20,
+      "success_after_failures": false,
+      "allowlisted": true,
+      "allowlist_name": "vuln-scanner-demo",
+      "context_complete": true,
+      "hostname": "edge-demo-01.example.com",
+      "summary": "20 failed logons from allowlisted demo scanner 192.0.2.8 against svc-scan."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.8", "reputation": "allowlisted"}
+    ]
+  }
+]
