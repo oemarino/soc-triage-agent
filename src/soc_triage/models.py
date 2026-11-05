@@ -1,7 +1,7 @@
-"""Typed alert schema for synthetic SOC fixtures.
+"""Typed alert schema and triage results for synthetic SOC fixtures.
 
 Spec fields: id, timestamp, source, category, raw fields, optional IOCs.
-Severity labels use the plan.md scale. Rule results (confidence, reasons) are T3.
+`TriageResult` is the rules-engine output (T3). Notes and reports come later.
 """
 
 from __future__ import annotations
@@ -107,6 +107,43 @@ class Alert(BaseModel):
     category: AlertCategory
     raw_fields: dict[str, Any] = Field(description="Event fields a reviewer can cite.")
     iocs: list[Ioc] = Field(default_factory=list, description="Optional indicators.")
+
+
+ReasonCode = Literal[
+    "category_baseline",
+    "burst",
+    "ioc_reputation",
+    "allowlist",
+    "incomplete_context",
+    "missing_field",
+]
+
+
+class Reason(BaseModel):
+    """One checkable explanation for a triage score."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: ReasonCode
+    message: str = Field(min_length=1)
+
+
+class TriageResult(BaseModel):
+    """Severity from the rules engine. A human still makes the final call."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    alert_id: str = Field(pattern=ID_PATTERN)
+    severity: Severity
+    confidence: float = Field(ge=0, le=1)
+    needs_review: bool
+    reasons: list[Reason] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def low_confidence_is_not_critical(self) -> Self:
+        if self.severity is Severity.CRITICAL and self.confidence < 0.5:
+            raise ValueError("critical severity requires confidence >= 0.5")
+        return self
 
 
 class Label(BaseModel):

@@ -12,7 +12,7 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
   Pydantic `Alert` model; ≥20 synthetic alerts across ≥5 categories; `fixtures/labels.json` for a subset.  
   **Done when:** fixtures validate against model; loader tested.
 
-- [ ] **T3 — Rules engine**  
+- [x] **T3 — Rules engine**  
   Deterministic severity + confidence + `reasons[]`; allowlist downgrades; unit tests per rule family.  
   **Done when:** known fixture alerts map to expected severities in tests.
 

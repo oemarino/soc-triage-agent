@@ -4,7 +4,7 @@ Portfolio project for a cybersecurity student: a first-pass assistant that ranks
 
 This is a learning and demo repo. It is not a SIEM, and it does not connect to a live security stack.
 
-**Status:** T2 alert schema and synthetic fixtures are in place. Rules, the CLI demo, and eval are still T3–T5 (`tasks.md`). `soc-triage run` and `soc-triage eval` print a synthetic-mode banner and exit.
+**Status:** T3 rules score every fixture alert. The CLI demo and eval command are still T4 and T5 (`tasks.md`). `soc-triage run` and `soc-triage eval` print a synthetic-mode banner and exit.
 
 ## What the MVP will do
 
@@ -58,7 +58,7 @@ soc-triage --help
 
 `fixtures/alerts/` holds 25 hand-authored alerts, five in each seed category: `brute_force`, `phishing_url`, `malware_hash`, `lateral_movement`, and `policy_noise`. Addresses are RFC 5737 documentation IPs. Names use RFC 2606 `example` domains. Hashes are repeated-nibble placeholders, not malware samples.
 
-`fixtures/labels.json` is ground truth for 15 of those alerts, so a later eval can score severity. It is a subset, not a full answer key.
+`fixtures/labels.json` is ground truth for 15 of those alerts, so a later eval can score severity. It is a subset, not a full answer key. The rules engine matches those 15 labels. There are no intentional mismatches.
 
 ```bash
 python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; print(len(load_alerts(default_alerts_dir())))"
@@ -84,17 +84,25 @@ Label entries look like this:
 
 Severity values are `critical`, `high`, `medium`, `low`, and `info`.
 
+## Rules
+
+`score_alert` in `src/soc_triage/rules.py` is deterministic and does not use an API key. It starts from a category baseline, then applies IOC reputation, count thresholds, an incomplete-context cap (`low` plus `needs_review`), and an allowlist downgrade to `info`.
+
+```bash
+python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; from soc_triage.rules import score_alert; alert = load_alerts(default_alerts_dir())[0]; result = score_alert(alert); print(alert.id, result.severity.value, result.confidence)"
+```
+
 ## Limitations
 
-- Schema and synthetic fixtures only. There is no rule engine, ranked report, or eval metric yet.
+- Rules score severity, confidence, and reasons. The CLI does not rank a directory yet, and there is no eval report yet.
 - No live SIEM, EDR, or ticket write-back (out of scope for the MVP).
-- No automated containment.
+- No automated containment. A human makes the final call.
 - Not for production security operations. Resume language should match the code, not a production SOC platform.
 - Sample data is synthetic. Do not drop real alerts into `fixtures/`.
 
 ## Next step
 
-**T3 — Rules engine.** Deterministic severity, confidence, and `reasons[]`, including allowlist downgrades. Done when known fixture alerts map to expected severities in unit tests.
+**T4 — CLI triage command.** `soc-triage run fixtures/alerts` should print a synthetic-mode banner plus a ranked JSON and markdown summary, with no API key.
 
 ```bash
 pytest
