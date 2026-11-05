@@ -1,0 +1,26 @@
+---
+description: SOC triage constitution — synthetic data, no offensive tooling, human in the loop
+alwaysApply: true
+---
+
+# SOC Triage Agent
+
+`constitution.md` is binding. These rules restate the non-negotiables for every change.
+
+## Synthetic data only
+Use fixture alerts and public sample data. Never ingest real customer, employer, or classmate PII. Do not add live SIEM, EDR, or ticket connectors in the MVP.
+
+## No offensive tooling
+Detection and triage only. Do not add exploit code, payload generation, credential theft, scanning, or attack rehearsal.
+
+## Human in the loop
+Recommend severity and draft notes. A human makes the final call. Never auto-close, auto-block, or auto-notify external parties.
+
+## Explainability and safe defaults
+Every triage decision must cite alert fields and rule reasons. If data is missing or confidence is low, mark `needs_review` instead of guessing critical. Severity comes from the rules engine. Optional LLM text may enrich notes only and must never be the sole source of severity.
+
+## Secrets stay out of git
+Do not commit API keys or `.env`. `.env.example` may list variable names with empty values. The rules-only path must run with no secrets. Gate any LLM client behind an environment variable and skip it when the key is absent.
+
+## Honest scope
+Do not describe this repo as a production SIEM. Match README claims to what the code actually does. Implement one `tasks.md` item at a time. Keep `constitution.md`, `spec.md`, `plan.md`, and `tasks.md` current when behavior changes.

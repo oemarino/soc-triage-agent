@@ -1,0 +1,37 @@
+[project]
+name = "soc-triage"
+version = "0.1.0"
+description = "Portfolio assistant that ranks synthetic SOC alerts and drafts first-pass analyst notes."
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["soc", "triage", "cybersecurity", "portfolio", "detection"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+dependencies = [
+    "pydantic>=2.6",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+soc-triage = "soc_triage.cli:app"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

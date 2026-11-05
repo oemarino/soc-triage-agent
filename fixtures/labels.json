@@ -1,0 +1,5 @@
+{
+  "dataset": "synthetic-soc-triage",
+  "description": "Ground-truth severity labels for eval. Placeholder until T2. Each entry will map one synthetic alert id to critical, high, medium, low, or info. Synthetic alerts only — never real PII.",
+  "labels": []
+}
