@@ -1,15 +1,20 @@
 """Command-line interface.
 
-TODO(T4): `soc-triage run` triages a fixture directory with the rules path.
+`run` triages a fixture file or directory with the rules path.
 TODO(T5): `soc-triage eval` reports metrics against fixtures/labels.json.
-Every real run must print the synthetic/demo banner. No API key required.
+Every real run states synthetic/demo mode. No API key required.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
-TODO = "T4"
+from soc_triage.ingest import FixtureLoadError, load_alerts
+from soc_triage.report import build_report, render_json, render_markdown
+
+TODO = "T5"
 
 app = typer.Typer(
     add_completion=False,
@@ -25,6 +30,8 @@ SAFETY_BANNER = (
     "a human makes the final call. No auto-close, auto-block, or external notify."
 )
 
+_FORMATS = {"markdown", "json"}
+
 
 def safety_banner() -> str:
     """Banner required on every triage run (spec: safety banner)."""
@@ -37,14 +44,52 @@ def main() -> None:
 
 
 @app.command("run")
-def run_command() -> None:
-    """Rank fixture alerts. Implemented in T4."""
-    typer.echo(safety_banner())
-    typer.echo(
-        "soc-triage run is not implemented yet. "
-        "Next work is T2 (schema + fixtures), then T4 (tasks.md)."
-    )
-    raise typer.Exit(code=0)
+def run_command(
+    path: Path = typer.Argument(
+        ...,
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+        readable=True,
+        help="JSON alert file or directory of JSON alerts.",
+    ),
+    json_path: Path | None = typer.Option(
+        None,
+        "--json",
+        help="Write the full ranked results to this JSON file.",
+    ),
+    output_format: str = typer.Option(
+        "markdown",
+        "--format",
+        help="Stdout format: markdown or json.",
+    ),
+) -> None:
+    """Rank fixture alerts with the rules engine. No API key required."""
+    chosen = output_format.lower()
+    if chosen not in _FORMATS:
+        typer.echo("Unknown format. Use markdown or json.", err=True)
+        raise typer.Exit(code=2)
+
+    try:
+        alerts = load_alerts(path)
+    except FixtureLoadError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+
+    report = build_report(alerts, banner=safety_banner())
+    payload = render_json(report)
+    if json_path is not None:
+        try:
+            json_path.write_text(payload, encoding="utf-8")
+        except OSError as exc:
+            typer.echo(f"Could not write {json_path}: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
+
+    if chosen == "json":
+        typer.echo(safety_banner(), err=True)
+        typer.echo(payload, nl=False)
+        return
+    typer.echo(render_markdown(report), nl=False)
 
 
 @app.command("eval")

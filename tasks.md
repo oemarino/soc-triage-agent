@@ -16,7 +16,7 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
   Deterministic severity + confidence + `reasons[]`; allowlist downgrades; unit tests per rule family.  
   **Done when:** known fixture alerts map to expected severities in tests.
 
-- [ ] **T4 — CLI triage command**  
+- [x] **T4 — CLI triage command**  
   `soc-triage run fixtures/alerts` → ranked JSON + markdown summary; synthetic-mode banner.  
   **Done when:** one command demos end-to-end without API keys.
 

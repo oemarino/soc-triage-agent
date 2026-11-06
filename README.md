@@ -4,7 +4,7 @@ Portfolio project for a cybersecurity student: a first-pass assistant that ranks
 
 This is a learning and demo repo. It is not a SIEM, and it does not connect to a live security stack.
 
-**Status:** T3 rules score every fixture alert. The CLI demo and eval command are still T4 and T5 (`tasks.md`). `soc-triage run` and `soc-triage eval` print a synthetic-mode banner and exit.
+**Status:** T4 `soc-triage run` ranks fixture alerts with the rules engine and template notes. Eval is still T5 (`tasks.md`). `soc-triage eval` prints the synthetic-mode banner and exits.
 
 ## What the MVP will do
 
@@ -52,7 +52,38 @@ pytest
 soc-triage --help
 ```
 
-`pytest` should pass on a fresh clone with no API keys. `soc-triage run` and `soc-triage eval` are stubs until T4 and T5.
+`pytest` and `soc-triage run` should work on a fresh clone with no API keys. `soc-triage eval` stays a stub until T5.
+
+## Demo
+
+```bash
+soc-triage run fixtures/alerts
+soc-triage run fixtures/alerts --json triage.json
+soc-triage run fixtures/alerts/brute_force.json --format json
+```
+
+`run` accepts a directory or one JSON file. It prints the synthetic-mode banner, then a markdown table ranked by severity and confidence. `--format json` prints the same ranking as JSON on stdout (the banner goes to stderr so the stream stays valid JSON). `--json PATH` always writes the full ranked results, including reasons and draft notes.
+
+The start of a real `soc-triage run fixtures/alerts` looks like this:
+
+```text
+Synthetic/demo mode. This tool recommends severity and drafts notes; a human makes the final call. No auto-close, auto-block, or external notify.
+
+# Triage summary (25 alerts)
+
+4 critical · 4 high · 5 medium · 5 low · 7 info
+
+Ranked by severity, then confidence. Recommendations only; a human makes the final call.
+
+| Rank | Id | Category | Severity | Confidence | Needs review | Top reasons |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | SYN-BF-001 | brute_force | critical | 0.90 | no | raw_fields.failure_count=86 · raw_fields.success_after_failures=true after 86 failures |
+| 2 | SYN-LM-001 | lateral_movement | critical | 0.90 | no | spread=14; raw_fields.dest_host_count=14, raw_fields.admin_share_conn... · iocs ipv4 203.0.113.50 reputation=malicious |
+| 3 | SYN-MH-001 | malware_hash | critical | 0.90 | no | sha256 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa... · iocs sha256 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa... |
+| 4 | SYN-PH-001 | phishing_url | critical | 0.90 | no | raw_fields.url=https://sso.login.example/reset · raw_fields.clicked=true and IOC reputation=malicious |
+```
+
+Draft notes follow the table. Each note cites rule reasons and alert fields. Severity still comes only from the rules.
 
 ## Fixtures
 
@@ -94,7 +125,8 @@ python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; from s
 
 ## Limitations
 
-- Rules score severity, confidence, and reasons. The CLI does not rank a directory yet, and there is no eval report yet.
+- The CLI ranks synthetic fixtures and drafts template notes. It does not compare those scores to `fixtures/labels.json` yet.
+- Notes are templates. There is no language-model call.
 - No live SIEM, EDR, or ticket write-back (out of scope for the MVP).
 - No automated containment. A human makes the final call.
 - Not for production security operations. Resume language should match the code, not a production SOC platform.
@@ -102,8 +134,9 @@ python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; from s
 
 ## Next step
 
-**T4 — CLI triage command.** `soc-triage run fixtures/alerts` should print a synthetic-mode banner plus a ranked JSON and markdown summary, with no API key.
+**T5 — Eval harness.** `soc-triage eval` should compare predicted severity to `fixtures/labels.json` and print accuracy plus a confusion-style summary.
 
 ```bash
 pytest
+soc-triage run fixtures/alerts
 ```
