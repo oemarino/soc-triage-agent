@@ -1,0 +1,85 @@
+[
+  {
+    "id": "SYN-PN-001",
+    "timestamp": "2026-03-10T15:00:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "svc-iam-demo",
+      "hostname": "iam-demo-01.example.com",
+      "event_count": 1,
+      "allowlisted": true,
+      "allowlist_name": "scheduled-account-audit",
+      "context_complete": true,
+      "summary": "svc-iam-demo ran the scheduled account audit on iam-demo-01.example.com. Allowlisted."
+    }
+  },
+  {
+    "id": "SYN-PN-002",
+    "timestamp": "2026-03-10T15:30:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "demo.user11",
+      "src_ip": "198.51.100.80",
+      "hostname": "vpn-demo-01.example.com",
+      "event_count": 1,
+      "policy": "notify-only",
+      "allowlisted": true,
+      "allowlist_name": "corp-vpn-pool",
+      "context_complete": true,
+      "summary": "demo.user11 connected to the demo VPN from 198.51.100.80 during the notify-only window."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "198.51.100.80", "reputation": "allowlisted"}
+    ]
+  },
+  {
+    "id": "SYN-PN-003",
+    "timestamp": "2026-03-10T22:18:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "demo.user12",
+      "hostname": "lab-demo-02.example.com",
+      "event_count": 1,
+      "after_hours": true,
+      "allowlisted": false,
+      "context_complete": false,
+      "summary": "demo.user12 badged into lab-demo-02 after hours. No related host alert."
+    }
+  },
+  {
+    "id": "SYN-PN-004",
+    "timestamp": "2026-03-11T12:11:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "demo.user10",
+      "hostname": "fin-demo-04.example.com",
+      "src_ip": "192.0.2.44",
+      "removable_storage": true,
+      "policy_violation": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "Removable storage mounted on fin-demo-04.example.com by demo.user10. Policy violation, no malware indicator."
+    },
+    "iocs": [
+      {"type": "ipv4", "value": "192.0.2.44", "reputation": "unknown"}
+    ]
+  },
+  {
+    "id": "SYN-PN-005",
+    "timestamp": "2026-03-11T15:05:00Z",
+    "source": "demo-mail-gateway",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "svc-iam-demo",
+      "event_count": 200,
+      "allowlisted": true,
+      "allowlist_name": "password-expiry-notices",
+      "context_complete": true,
+      "summary": "200 password-expiry notices sent to example.com mailboxes by the allowlisted mail job."
+    }
+  }
+]
