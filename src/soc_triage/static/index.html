@@ -5,20 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SOC Triage — synthetic demo</title>
   <style>
+    /* Geist is the open family x.ai uses for technical type. SIL OFL, see fonts/OFL.txt. */
+    @font-face {
+      font-family: "Geist";
+      src: url("/ui-assets/fonts/geist-sans.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist";
+      src: url("/ui-assets/fonts/geist-sans-500.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("/ui-assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
-      --bg: #0e141b;
-      --bg-raise: #16202b;
-      --bg-sunken: #0b1016;
-      --line: #2c3d4e;
-      --text: #e7eef6;
-      --muted: #93a4b8;
-      --amber: #e0a15a;
-      --critical: #d4534a;
-      --high: #e07a32;
-      --medium: #d4a017;
-      --low: #3d8fd1;
-      --info: #6d7c8d;
-      --focus: #f0c27a;
+      --paper: #ffffff;
+      --tile: #f9f8f6;
+      --ink: #0a0a0a;
+      --ink-soft: rgba(10, 10, 10, 0.6);
+      --muted: #7d8187;
+      --hairline: #e1e1e1;
+      --rule: #d5d9e2;
+      --line: rgba(10, 10, 10, 0.08);
+      --line-strong: rgba(10, 10, 10, 0.14);
+      --hover: rgba(10, 10, 10, 0.04);
+      --orange: #ff6308;
+      --critical: #d73a49;
+      --high: #ff6308;
+      --medium: #8a6a12;
+      --low: #1d4e89;
+      --info: #59534d;
     }
 
     * { box-sizing: border-box; }
@@ -28,70 +54,105 @@
     body {
       margin: 0;
       min-height: 100vh;
-      color: var(--text);
-      background:
-        radial-gradient(1200px 480px at 10% -10%, #1c2c3c 0%, transparent 55%),
-        var(--bg);
-      font: 15px/1.45 "Segoe UI", "Liberation Sans", "DejaVu Sans", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      font: 400 16px/1.5 Geist, "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: -0.01em;
     }
 
-    header, main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 28px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--hairline);
+    }
 
-    header { padding: 28px 0 8px; }
+    .wordmark {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 99, 8, 0.1);
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    header, main { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+
+    header { padding: 56px 0 8px; }
 
     .eyebrow {
-      margin: 0 0 4px;
-      color: var(--amber);
+      margin: 0 0 8px;
+      color: var(--ink-soft);
+      font-family: "Geist Mono", ui-monospace, monospace;
       font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
+      font-weight: 400;
+      letter-spacing: 0.04em;
     }
 
-    h1 { margin: 0 0 12px; font-size: 32px; letter-spacing: -0.03em; }
+    h1 {
+      margin: 0 0 20px;
+      font-size: 48px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.48px;
+    }
 
     .banner, .demo-note {
-      margin: 0 0 8px;
-      padding: 10px 12px;
+      margin: 0 0 10px;
+      padding: 14px 16px;
       border: 1px solid var(--line);
-      border-left: 3px solid var(--amber);
-      border-radius: 8px;
-      background: var(--bg-raise);
-      color: var(--muted);
+      border-radius: 16px;
+      background: var(--tile);
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.45;
     }
 
-    .banner { color: var(--text); }
+    .banner { color: var(--ink); }
 
-    main { padding-bottom: 40px; }
+    main { padding-bottom: 64px; }
 
     form, .results {
-      margin-top: 16px;
-      padding: 16px;
+      margin-top: 20px;
+      padding: 20px;
       border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(22, 32, 43, 0.92);
+      border-radius: 16px;
+      background: var(--paper);
     }
 
-    label, .check { display: block; font-weight: 650; }
+    label { display: block; font-size: 14px; font-weight: 500; }
 
-    .hint { margin: 4px 0 8px; color: var(--muted); font-weight: 400; }
+    .hint { margin: 4px 0 10px; color: var(--ink-soft); font-size: 14px; font-weight: 400; }
 
     textarea {
       width: 100%;
       min-height: 7.5rem;
       max-height: 9rem;
       resize: vertical;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--bg-sunken);
-      color: var(--text);
-      font: 13px/1.4 "Liberation Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+      padding: 12px 14px;
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      background: var(--tile);
+      color: var(--ink);
+      font: 13px/1.6 "Geist Mono", ui-monospace, monospace;
+      letter-spacing: 0;
     }
 
-    textarea:focus, button:focus-visible, tr:focus-visible, input:focus-visible {
-      outline: 2px solid var(--focus);
-      outline-offset: 2px;
+    textarea::placeholder { color: rgba(10, 10, 10, 0.35); }
+
+    textarea:focus, button:focus-visible, tr:focus-visible, input:focus-visible, .file-button:focus-within {
+      outline: 2px solid transparent;
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(10, 10, 10, 0.3);
     }
 
     .actions {
@@ -99,46 +160,67 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      margin-top: 10px;
+      margin-top: 12px;
     }
 
     button, .file-button {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px 12px;
-      background: #223140;
-      color: var(--text);
-      font: inherit;
-      font-weight: 650;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      padding: 10px 18px;
+      background: transparent;
+      color: var(--ink);
+      font: 500 14px/20px Geist, "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
       cursor: pointer;
+      transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    button.primary { background: #8a5a22; border-color: #b98345; color: #fff8ee; }
+    button.primary {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #ffffff;
+    }
 
-    button:hover, .file-button:hover { filter: brightness(1.08); }
+    button.primary:hover { background: #2e3033; }
 
-    .file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    button:hover, .file-button:hover { background: var(--hover); }
+
+    button.primary:hover { background: #2e3033; }
+
+    .file-button input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
 
     .check {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: flex-start;
-      margin-top: 12px;
+      margin-top: 16px;
+      color: var(--ink-soft);
+      font-size: 14px;
       font-weight: 400;
+      line-height: 1.45;
     }
 
-    .check input { margin-top: 3px; }
+    .check input { margin-top: 3px; accent-color: var(--ink); }
 
-    #status { min-height: 1.2em; margin: 10px 2px; color: var(--muted); }
+    #status { min-height: 1.2em; margin: 12px 2px; color: var(--muted); font-size: 14px; }
 
-    #status.error { color: #ffb4ab; }
+    #status.error { color: var(--critical); }
 
     .summary {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .count, .sev-pill {
@@ -146,18 +228,18 @@
       padding: 2px 8px;
       border-radius: 999px;
       font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      color: #1a1208;
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: 1.35;
     }
 
-    .count.total, .sev-pill.total { background: #d5dee8; }
+    .count.total { background: var(--ink); color: #ffffff; }
 
-    .sev-pill.sev-critical, .count.sev-critical { background: var(--critical); color: #fff; }
-    .sev-pill.sev-high, .count.sev-high { background: var(--high); color: #1a1208; }
-    .sev-pill.sev-medium, .count.sev-medium { background: var(--medium); color: #1a1208; }
-    .sev-pill.sev-low, .count.sev-low { background: var(--low); color: #fff; }
-    .sev-pill.sev-info, .count.sev-info { background: var(--info); color: #fff; }
+    .sev-pill.sev-critical, .count.sev-critical { background: var(--critical); color: #ffffff; }
+    .sev-pill.sev-high, .count.sev-high { background: var(--high); color: #0a0a0a; }
+    .sev-pill.sev-medium, .count.sev-medium { background: var(--medium); color: #ffffff; }
+    .sev-pill.sev-low, .count.sev-low { background: var(--low); color: #ffffff; }
+    .sev-pill.sev-info, .count.sev-info { background: var(--info); color: #ffffff; }
 
     .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 
@@ -168,90 +250,122 @@
       align-items: start;
     }
 
-    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--rule);
+      border-radius: 16px;
+      background: var(--paper);
+    }
 
-    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 
     caption {
       caption-side: bottom;
-      padding: 8px 10px;
+      padding: 10px 12px;
       color: var(--muted);
       text-align: left;
+      font-size: 12px;
     }
 
-    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--rule); }
 
     th {
       position: sticky;
       top: 0;
-      background: #1b2836;
+      background: var(--paper);
       color: var(--muted);
       font-size: 12px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      font-weight: 500;
+      letter-spacing: 0;
     }
 
-    tbody tr { cursor: pointer; box-shadow: inset 4px 0 0 transparent; }
-    tbody tr.sev-critical { background: rgba(212, 83, 74, 0.16); box-shadow: inset 4px 0 0 var(--critical); }
-    tbody tr.sev-high { background: rgba(224, 122, 50, 0.14); box-shadow: inset 4px 0 0 var(--high); }
-    tbody tr.sev-medium { background: rgba(212, 160, 23, 0.13); box-shadow: inset 4px 0 0 var(--medium); }
-    tbody tr.sev-low { background: rgba(61, 143, 209, 0.16); box-shadow: inset 4px 0 0 var(--low); }
-    tbody tr.sev-info { background: rgba(109, 124, 141, 0.16); box-shadow: inset 4px 0 0 var(--info); }
-    tbody tr:hover { filter: brightness(1.12); }
-    tbody tr[aria-selected="true"] { outline: 1px solid var(--amber); outline-offset: -1px; }
+    tbody tr { cursor: pointer; background: var(--paper); }
+    tbody tr.sev-critical { box-shadow: inset 3px 0 0 var(--critical); }
+    tbody tr.sev-high { box-shadow: inset 3px 0 0 var(--high); }
+    tbody tr.sev-medium { box-shadow: inset 3px 0 0 var(--medium); }
+    tbody tr.sev-low { box-shadow: inset 3px 0 0 var(--low); }
+    tbody tr.sev-info { box-shadow: inset 3px 0 0 var(--info); }
+    tbody tr:hover { background: var(--hover); }
+    tbody tr.sev-critical[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--critical), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-high[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--high), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-medium[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--medium), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-low[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--low), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-info[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--info), inset 0 0 0 1px var(--ink); background: var(--tile); }
 
-    td.id { font-family: "Liberation Mono", "DejaVu Sans Mono", ui-monospace, monospace; font-size: 13px; }
+    td.id, code, .code, #draft-note, textarea {
+      font-family: "Geist Mono", ui-monospace, monospace;
+    }
+
+    td.id { font-size: 13px; }
 
     .empty td { color: var(--muted); cursor: default; }
 
     #detail {
-      padding: 12px 14px;
+      padding: 16px;
       border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--bg-sunken);
+      border-radius: 16px;
+      background: var(--tile);
     }
 
-    #detail h2 { margin: 0 0 8px; font-size: 16px; }
+    #detail h2 { margin: 0 0 10px; font-size: 16px; font-weight: 500; letter-spacing: -0.16px; }
 
-    #detail h3 { margin: 14px 0 6px; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    #detail h3 {
+      margin: 16px 0 6px;
+      color: var(--muted);
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
-    .meta { margin: 0 0 6px; color: var(--muted); }
+    .meta { margin: 0 0 6px; color: var(--ink-soft); font-size: 14px; }
 
     .ai-label {
+      display: inline-block;
       margin: 8px 0;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #3d2a12;
-      color: #ffd7a1;
-      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 99, 8, 0.1);
+      color: var(--orange);
+      font-size: 13px;
+      font-weight: 500;
     }
 
-    #reasons { margin: 0; padding-left: 18px; }
-    #reasons li { margin: 4px 0; }
+    #reasons { margin: 0; padding-left: 18px; font-size: 14px; }
+    #reasons li { margin: 6px 0; }
     .code {
       display: inline-block;
       margin-right: 6px;
-      padding: 0 6px;
-      border-radius: 4px;
-      background: #243140;
-      color: var(--amber);
-      font-family: "Liberation Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(10, 10, 10, 0.06);
+      color: var(--ink);
       font-size: 12px;
     }
 
     #draft-note {
       margin: 0;
       white-space: pre-wrap;
-      font: 13px/1.45 "Liberation Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      letter-spacing: 0;
     }
 
     @media (max-width: 900px) {
+      .topbar { padding: 0 16px; }
+      header, main { width: min(1180px, calc(100% - 32px)); }
       .split { grid-template-columns: 1fr; }
-      h1 { font-size: 26px; }
+      h1 { font-size: 36px; }
+      header { padding-top: 32px; }
     }
   </style>
 </head>
 <body>
+  <div class="topbar">
+    <span class="wordmark">SOC Triage</span>
+    <span class="badge">Synthetic demo</span>
+  </div>
   <header>
     <p class="eyebrow">Synthetic demo · not a SIEM</p>
     <h1>SOC Triage</h1>

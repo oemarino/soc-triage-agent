@@ -96,6 +96,11 @@ def test_ui_route_returns_the_demo_page(client: TestClient) -> None:
     assert 'params.set("llm_notes", "true")' in html
     assert 'type="password"' not in html
     assert "No API key is required" in html
+    assert "/ui-assets/fonts/geist-sans.woff2" in html
+    assert "border-radius: 999px" in html
+    font = client.get("/ui-assets/fonts/geist-sans.woff2")
+    assert font.status_code == 200
+    assert "woff2" in font.headers["content-type"]
 
     spec = client.get("/openapi.json")
     assert spec.status_code == 200

@@ -24,6 +24,7 @@ from typing import Annotated, Literal
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from soc_triage import __version__
@@ -192,6 +193,11 @@ def create_app(*, llm_notes_default: bool = False) -> FastAPI:
     app.add_middleware(BodySizeLimit, max_bytes=MAX_BODY_BYTES)
     _register_handlers(app)
     _register_routes(app)
+    app.mount(
+        "/ui-assets",
+        StaticFiles(directory=Path(__file__).resolve().parent / "static"),
+        name="ui-assets",
+    )
     return app
 
 
