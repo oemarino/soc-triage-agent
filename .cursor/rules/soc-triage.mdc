@@ -17,10 +17,10 @@ Detection and triage only. Do not add exploit code, payload generation, credenti
 Recommend severity and draft notes. A human makes the final call. Never auto-close, auto-block, or auto-notify external parties.
 
 ## Explainability and safe defaults
-Every triage decision must cite alert fields and rule reasons. If data is missing or confidence is low, mark `needs_review` instead of guessing critical. Severity comes from the rules engine. Optional LLM text may enrich notes only and must never be the sole source of severity.
+Every triage decision must cite alert fields and rule reasons. If data is missing or confidence is low, mark `needs_review` instead of guessing critical. Severity, confidence, needs_review, and reasons come from the rules engine. Optional LLM text may rewrite the note only. It runs solely when `--llm-notes` is set and `SOC_TRIAGE_LLM_PROVIDER=openai_compatible` with a base URL and model. An API key is sent only if `SOC_TRIAGE_LLM_API_KEY` is set. Missing config, timeout, or invalid text keeps the template note.
 
 ## Secrets stay out of git
-Do not commit API keys or `.env`. `.env.example` may list variable names with empty values. The rules-only path must run with no secrets. Gate any LLM client behind an environment variable and skip it when the key is absent.
+Do not commit API keys or `.env`. `.env.example` may list variable names with empty values. The rules-only path must run with no secrets and no network call. Gate the LLM client behind `--llm-notes` plus provider settings. Skip the call when that config is absent. A local Ollama server may omit the API key.
 
 ## Honest scope
 Do not describe this repo as a production SIEM. Match README claims to what the code actually does. Implement one `tasks.md` item at a time. Keep `constitution.md`, `spec.md`, `plan.md`, and `tasks.md` current when behavior changes.

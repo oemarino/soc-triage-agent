@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 
@@ -26,12 +25,12 @@ def test_schema_modules_import() -> None:
     assert callable(soc_triage.ingest.load_alerts)
 
 
-def test_remaining_stubs_name_their_task() -> None:
-    for name in ("soc_triage.notes",):
-        module = importlib.import_module(name)
-        assert isinstance(module.TODO, str)
-        assert module.TODO.startswith("T")
-        assert module.TODO != "T2"
+def test_notes_module_is_implemented() -> None:
+    import soc_triage.notes as notes
+
+    assert not hasattr(notes, "TODO")
+    assert callable(notes.draft_note)
+    assert callable(notes.resolve_note)
 
 
 def test_cli_help_lists_later_commands() -> None:

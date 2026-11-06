@@ -30,7 +30,7 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
 
 ## P1 — Enrichment
 
-- [ ] **T7 — Optional LLM draft notes**  
+- [x] **T7 — Optional LLM draft notes**  
   Interface + OpenAI-compatible client; gated by env; falls back to template notes.  
   **Done when:** with key, notes enrich; without key, rules path unchanged.
 

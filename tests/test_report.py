@@ -80,6 +80,7 @@ def test_markdown_summary_lists_required_columns() -> None:
     assert "## Draft notes" in text
     assert "Recommended severity" in text
     assert "1 critical" in text
+    assert "AI-drafted, analyst review required." not in text
 
 
 def test_markdown_counts_and_top_reasons() -> None:
@@ -100,6 +101,7 @@ def test_json_contains_full_ranked_results() -> None:
     assert first["severity"] == "critical"
     assert first["needs_review"] is False
     assert first["reasons"]
+    assert first["note_source"] == "rules"
     assert "Recommended severity critical" in first["note"]
 
 

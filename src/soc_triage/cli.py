@@ -3,6 +3,7 @@
 `run` triages a fixture file or directory with the rules path.
 `eval` compares those scores to a label file.
 Every real run states synthetic/demo mode. No API key required.
+`--llm-notes` is off by default and is the only path that can call a model.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from soc_triage.ingest import (
     load_alerts,
     load_labels,
 )
+from soc_triage.llm import OpenAICompatibleClient, config_warning, load_llm_settings
 from soc_triage.report import build_report, render_json, render_markdown
 
 app = typer.Typer(
@@ -41,6 +43,30 @@ _FORMATS = {"markdown", "json"}
 def safety_banner() -> str:
     """Banner required on every triage run (spec: safety banner)."""
     return SAFETY_BANNER
+
+
+def _note_rewriter(llm_notes: bool) -> OpenAICompatibleClient | None:
+    """Build a client only when the flag and provider config both allow it."""
+    if not llm_notes:
+        return None
+    settings = load_llm_settings()
+    warning = config_warning(settings)
+    if warning is not None:
+        typer.echo(warning, err=True)
+        return None
+    typer.echo(
+        "Sending structured alert fields and rule reasons to the configured model. "
+        "Synthetic data only. Severity stays with the rules.",
+        err=True,
+    )
+    return OpenAICompatibleClient(settings)
+
+
+def _warn_note_fallback(alert_id: str, reason: str) -> None:
+    typer.echo(
+        f"LLM note for {alert_id} was not used ({reason}). Using the rule-based note.",
+        err=True,
+    )
 
 
 @app.callback()
@@ -68,8 +94,20 @@ def run_command(
         "--format",
         help="Stdout format: markdown or json.",
     ),
+    llm_notes: bool = typer.Option(
+        False,
+        "--llm-notes",
+        help=(
+            "Rewrite each draft note with the configured OpenAI-compatible model. "
+            "Off by default. Rules still set severity, confidence, needs_review, and reasons. "
+            "Missing config, timeout, or invalid text keeps the template note."
+        ),
+    ),
 ) -> None:
-    """Rank fixture alerts with the rules engine. No API key required."""
+    """Rank fixture alerts with the rules engine. No API key required.
+
+    Pass --llm-notes to rewrite note text only, and only when provider config is set.
+    """
     chosen = output_format.lower()
     if chosen not in _FORMATS:
         typer.echo("Unknown format. Use markdown or json.", err=True)
@@ -81,7 +119,13 @@ def run_command(
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
 
-    report = build_report(alerts, banner=safety_banner())
+    rewriter = _note_rewriter(llm_notes)
+    report = build_report(
+        alerts,
+        banner=safety_banner(),
+        rewriter=rewriter,
+        on_fallback=_warn_note_fallback if rewriter is not None else None,
+    )
     payload = render_json(report)
     if json_path is not None:
         try:

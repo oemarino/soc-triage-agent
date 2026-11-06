@@ -57,6 +57,7 @@ src/soc_triage/
   ingest.py
   rules.py
   notes.py
+  llm.py
   report.py
   cli.py
   eval.py
@@ -74,7 +75,7 @@ fixtures/heldout/labels.json
 2. Implement **one** `tasks.md` item per PR
 3. Cloud agent prompt = task id + acceptance criteria + link to plan section
 4. Rules-only path must always work without secrets
-5. LLM path gated by env var; skipped in CI if no key
+5. LLM path requires `soc-triage run --llm-notes` and `SOC_TRIAGE_LLM_PROVIDER=openai_compatible`. CI and the default demo omit the flag, so they make no network call.
 
 ## Risks & mitigations
 | Risk | Mitigation |
@@ -83,6 +84,9 @@ fixtures/heldout/labels.json
 | LLM hallucinations in notes | Notes cite rule reasons + alert fields; severity from rules |
 | Scope creep to “full SIEM” | Non-goals list; UI last |
 | Resume overclaim | README limitations section required |
+
+## Optional LLM notes (T7)
+`soc-triage run --llm-notes` rewrites note text when the provider is `openai_compatible` and the base URL and model are set. The default provider is `none`. The client posts to `{base_url}/chat/completions` with the standard library (xAI Grok at `https://api.x.ai/v1`, OpenAI, or Ollama at `http://localhost:11434/v1` with no key). Severity, confidence, `needs_review`, and reasons always come from `rules.score_alert`. The model sees delimited alert fields and rule reasons and is told not to invent facts. The timeout default is 8 seconds. Missing config, transport errors, and empty or oversized text fall back to `notes.draft_note`. JSON records `note_source` as `rules` or `llm`. Markdown marks model notes `AI-drafted, analyst review required.` Eval does not call the model.
 
 ## Phased delivery
 - **P0:** schema, fixtures, rules, CLI, tests, eval

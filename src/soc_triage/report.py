@@ -7,10 +7,13 @@ Within a severity, higher confidence ranks first. Alert id breaks ties.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Literal
+
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from soc_triage.models import Alert, Reason, Severity
-from soc_triage.notes import draft_note
+from soc_triage.notes import NoteRewriter, resolve_note
 from soc_triage.rules import score_alert
 
 SEVERITY_ORDER: tuple[Severity, ...] = (
@@ -23,7 +26,7 @@ SEVERITY_ORDER: tuple[Severity, ...] = (
 
 
 class RankedAlert(BaseModel):
-    """One scored alert in display order, plus a template note."""
+    """One scored alert in display order, plus a draft note."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -36,6 +39,7 @@ class RankedAlert(BaseModel):
     needs_review: bool
     reasons: list[Reason] = Field(min_length=1)
     note: str = Field(min_length=1)
+    note_source: Literal["rules", "llm"] = "rules"
 
 
 class TriageReport(BaseModel):
@@ -49,11 +53,25 @@ class TriageReport(BaseModel):
     results: list[RankedAlert]
 
 
-def build_report(alerts: list[Alert], *, banner: str) -> TriageReport:
-    """Score every alert, draft a template note, and rank the rows."""
+def build_report(
+    alerts: list[Alert],
+    *,
+    banner: str,
+    rewriter: NoteRewriter | None = None,
+    on_fallback: Callable[[str, str], None] | None = None,
+) -> TriageReport:
+    """Score every alert, draft a note, and rank the rows.
+
+    Severity, confidence, needs_review, and reasons always come from
+    ``score_alert``. ``rewriter`` is set only when LLM notes were requested.
+    A failed rewrite keeps the template and reports a short reason.
+    """
     rows: list[RankedAlert] = []
     for alert in alerts:
         result = score_alert(alert)
+        resolved = resolve_note(alert, result, rewriter)
+        if resolved.fallback_reason is not None and on_fallback is not None:
+            on_fallback(alert.id, resolved.fallback_reason)
         rows.append(
             RankedAlert(
                 id=alert.id,
@@ -64,7 +82,8 @@ def build_report(alerts: list[Alert], *, banner: str) -> TriageReport:
                 confidence=result.confidence,
                 needs_review=result.needs_review,
                 reasons=list(result.reasons),
-                note=draft_note(alert, result),
+                note=resolved.text,
+                note_source=resolved.source,
             )
         )
     return TriageReport(banner=banner, count=len(rows), results=order_results(rows))
@@ -102,7 +121,23 @@ def render_markdown(report: TriageReport) -> str:
     for row in report.results:
         lines.append(f"### {row.id}")
         lines.append("")
+        if row.note_source == "llm":
+            lines.append("AI-drafted, analyst review required.")
+            lines.append("")
         lines.append(row.note)
+        if row.note_source == "llm":
+            review = "yes" if row.needs_review else "no"
+            lines.extend(
+                [
+                    "",
+                    (
+                        f"Rule severity: {row.severity.value}. "
+                        f"Confidence: {row.confidence:.2f}. Needs review: {review}."
+                    ),
+                    "Rule reasons:",
+                    *[f"- ({reason.code}) {reason.message}" for reason in row.reasons],
+                ]
+            )
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
