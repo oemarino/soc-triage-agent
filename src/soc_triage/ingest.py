@@ -31,6 +31,16 @@ def default_labels_path() -> Path:
     return Path(__file__).resolve().parents[2] / "fixtures" / "labels.json"
 
 
+def default_heldout_alerts_dir() -> Path:
+    """Repo ``fixtures/heldout/alerts`` directory."""
+    return Path(__file__).resolve().parents[2] / "fixtures" / "heldout" / "alerts"
+
+
+def default_heldout_labels_path() -> Path:
+    """Repo ``fixtures/heldout/labels.json`` path."""
+    return Path(__file__).resolve().parents[2] / "fixtures" / "heldout" / "labels.json"
+
+
 def parse(payload: object) -> list[Alert]:
     """Validate one alert object or a list of alert objects.
 

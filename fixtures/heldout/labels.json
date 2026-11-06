@@ -1,6 +1,7 @@
 {
   "version": 1,
   "dataset": "synthetic-soc-triage-heldout",
+  "held_out": true,
   "description": "Hand-authored ground truth for fixtures/heldout/alerts. Each entry maps one synthetic alert id to critical, high, medium, low, or info. Labels were assigned from the spec.md severity definitions before the rules engine scored this set. Synthetic demo data only \u2014 never real PII.",
   "provenance": "Written for this repository in T9 as a held-out set, separate from fixtures/labels.json. Alerts are realistic variations of the five tuning categories: different counts, field orderings, near-threshold bursts, mixed IOC reputations, missing context, and allowlisted-but-suspicious cases. Severity labels were written from analyst judgment against spec.md before any eval run. rules.py was not modified to fit them. External addresses are RFC 5737 documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24). Names use RFC 2606 example domains. File hashes are repeated-nibble placeholders, not observed malware.",
   "labels": [

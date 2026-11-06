@@ -102,12 +102,18 @@ def eval_command(
     alerts: Path = typer.Option(
         default_alerts_dir(),
         "--alerts",
-        help="JSON alert file or directory. Default: fixtures/alerts.",
+        help=(
+            "JSON alert file or directory. Default: fixtures/alerts. "
+            "Held-out set: fixtures/heldout/alerts."
+        ),
     ),
     labels: Path = typer.Option(
         default_labels_path(),
         "--labels",
-        help="Label JSON file. Default: fixtures/labels.json.",
+        help=(
+            "Label JSON file. Default: fixtures/labels.json. "
+            "Held-out labels: fixtures/heldout/labels.json."
+        ),
     ),
     json_path: Path | None = typer.Option(
         None,
@@ -115,7 +121,10 @@ def eval_command(
         help="Write the metrics, caveat, and mismatches to this JSON file.",
     ),
 ) -> None:
-    """Compare rule severity to labels. No API key required."""
+    """Compare rule severity to labels.
+
+    Prints exact-match accuracy, within-one-level accuracy, and a confusion matrix.
+    """
     try:
         loaded_alerts = load_alerts(alerts)
         loaded_labels = load_labels(labels)

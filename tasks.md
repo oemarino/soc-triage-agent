@@ -40,8 +40,9 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
 
 ## P2 — Polish
 
-- [ ] **T9 — More fixtures + categories**  
-  Grow to ≥50 labeled alerts; document generation method.
+- [x] **T9 — More fixtures + held-out eval**  
+  30 synthetic alerts in `fixtures/heldout/`, labeled from the severity definitions before scoring, plus five more labels on the existing tuning set (50 labeled alerts in total). `soc-triage eval --alerts fixtures/heldout/alerts --labels fixtures/heldout/labels.json` reports exact-match accuracy, within-one-level accuracy, and a confusion matrix.  
+  **Done when:** the held-out file is committed before the eval run; README reports the tuning score and the held-out score with an error analysis; `rules.py` is unchanged.
 - [ ] **T10 — Minimal UI** (optional)  
   Streamlit or simple Next page over the API — only after P0 solid.
 

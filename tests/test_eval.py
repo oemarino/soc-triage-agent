@@ -9,14 +9,24 @@ from typer.testing import CliRunner
 
 from soc_triage.cli import app, safety_banner
 from soc_triage.eval import (
-    CAVEAT,
+    HELD_OUT_CAVEAT,
+    TUNING_CAVEAT,
     EvalError,
     class_metrics,
     confusion_matrix,
     evaluate,
+    format_ratio,
     render_eval_markdown,
+    within_one,
 )
-from soc_triage.ingest import default_alerts_dir, default_labels_path, load_alerts, load_labels
+from soc_triage.ingest import (
+    default_alerts_dir,
+    default_heldout_alerts_dir,
+    default_heldout_labels_path,
+    default_labels_path,
+    load_alerts,
+    load_labels,
+)
 from soc_triage.models import Label, LabelSet, Severity
 from soc_triage.rules import score_alert
 
@@ -52,6 +62,18 @@ def test_precision_recall_and_confusion_math() -> None:
     assert sum(sum(row) for row in matrix) == 3
 
 
+def test_within_one_is_the_label_or_a_neighbor() -> None:
+    assert within_one(Severity.CRITICAL, Severity.CRITICAL)
+    assert within_one(Severity.CRITICAL, Severity.HIGH)
+    assert not within_one(Severity.CRITICAL, Severity.MEDIUM)
+    assert within_one(Severity.INFO, Severity.LOW)
+    assert not within_one(Severity.INFO, Severity.MEDIUM)
+    assert format_ratio(15, 15, 1.0) == "15/15 (100%)"
+    assert format_ratio(28, 30, 28 / 30) == "28/30 (93.3%)"
+    assert format_ratio(0, 1, 0.0) == "0/1 (0%)"
+    assert format_ratio(0, 0, None) == "n/a (no labeled alerts)"
+
+
 def test_empty_support_has_no_precision_or_recall() -> None:
     forced = class_metrics([])
     assert len(forced) == len(list(Severity))
@@ -63,7 +85,7 @@ def test_bundled_labels_are_small_and_caveated() -> None:
     alerts = load_alerts(default_alerts_dir())
     labels = load_labels(default_labels_path())
     report = evaluate(alerts, labels, banner=safety_banner())
-    assert report.labeled_count == 15
+    assert report.labeled_count == 20
     assert report.alert_count == 25
     assert report.labeled_count < report.alert_count
     manual = 0
@@ -71,14 +93,16 @@ def test_bundled_labels_are_small_and_caveated() -> None:
     for label in labels.labels:
         predicted = score_alert(by_id[label.id]).severity
         manual += int(predicted is label.severity)
-    assert report.exact_matches == manual == 15
+    assert report.exact_matches == manual == 20
     assert report.accuracy == 1.0
+    assert report.within_one_matches == 20
+    assert report.within_one_accuracy == 1.0
     assert report.mismatches == []
     assert "not a measure of real-world accuracy" in report.caveat
     assert "synthetic" in report.caveat
     assert "tuned" in report.caveat
-    assert "T9" in report.caveat
-    assert report.caveat == CAVEAT
+    assert "fixtures/heldout" in report.caveat
+    assert report.caveat == TUNING_CAVEAT
     diagonal = sum(
         report.confusion_matrix[index][index] for index in range(len(report.confusion_labels))
     )
@@ -106,6 +130,9 @@ def test_mismatch_lists_id_and_reasons() -> None:
     assert "SYN-BF-001: labeled high, predicted critical" in text
     assert mismatch.reasons[0].message in text
     assert "n/a" in text
+    assert "Exact-match accuracy: 0/1 (0%)." in text
+    assert "Within-one-level accuracy: 1/1 (100%)." in text
+    assert report.within_one_matches == 1
 
 
 def test_missing_alert_and_empty_labels_fail() -> None:
@@ -155,26 +182,94 @@ def test_eval_cli_reports_bundled_metrics(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0, result.stderr
     assert result.stdout.startswith(safety_banner())
-    assert "Exact-match accuracy: 15/15 (100%)." in result.stdout
-    assert "Labeled alerts: 15 of 25 loaded." in result.stdout
+    assert "Exact-match accuracy: 20/20 (100%)." in result.stdout
+    assert "Within-one-level accuracy: 20/20 (100%)." in result.stdout
+    assert "Labeled alerts: 20 of 25 loaded." in result.stdout
     assert "not a measure of real-world accuracy" in result.stdout
-    assert "T9" in result.stdout
+    assert "fixtures/heldout" in result.stdout
     assert "Rows are labeled severity. Columns are predicted severity." in result.stdout
     assert "No mismatches." in result.stdout
     assert "| critical | 4 | 0 | 0 | 0 | 0 |" in result.stdout
 
     payload = json.loads(destination.read_text(encoding="utf-8"))
-    assert payload["labeled_count"] == 15
+    assert payload["labeled_count"] == 20
     assert payload["accuracy"] == 1.0
+    assert payload["within_one_accuracy"] == 1.0
     assert payload["mismatches"] == []
-    assert "T9" in payload["caveat"]
+    assert "fixtures/heldout" in payload["caveat"]
 
 
 def test_eval_cli_default_paths_and_bad_labels(tmp_path: Path) -> None:
     result = CliRunner().invoke(app, ["eval"])
     assert result.exit_code == 0, result.stderr
-    assert "15/15" in result.stdout
+    assert "20/20" in result.stdout
 
     missing = CliRunner().invoke(app, ["eval", "--labels", str(tmp_path / "missing.json")])
     assert missing.exit_code == 1
     assert "not found" in missing.stderr.lower() or "Label file not found" in missing.stderr
+
+
+def test_heldout_eval_reports_exact_within_one_and_confusion(tmp_path: Path) -> None:
+    alerts = load_alerts(default_heldout_alerts_dir())
+    labels = load_labels(default_heldout_labels_path())
+    report = evaluate(alerts, labels, banner=safety_banner())
+    assert labels.held_out is True
+    assert report.alert_count == 30
+    assert report.labeled_count == 30
+    assert report.exact_matches == 24
+    assert report.within_one_matches == 27
+    assert [
+        (item.alert_id, item.labeled.value, item.predicted.value) for item in report.mismatches
+    ] == [
+        ("HO-BF-002", "high", "medium"),
+        ("HO-BF-003", "critical", "medium"),
+        ("HO-LM-006", "high", "medium"),
+        ("HO-MH-006", "high", "medium"),
+        ("HO-PH-004", "critical", "medium"),
+        ("HO-PN-006", "medium", "info"),
+    ]
+    assert report.accuracy == report.exact_matches / 30
+    assert report.within_one_accuracy == report.within_one_matches / 30
+    assert report.caveat == HELD_OUT_CAVEAT
+    assert "tuned on these same alerts" not in report.caveat
+    assert sum(sum(row) for row in report.confusion_matrix) == 30
+    diagonal = sum(
+        report.confusion_matrix[index][index] for index in range(len(report.confusion_labels))
+    )
+    assert diagonal == report.exact_matches
+
+    destination = tmp_path / "heldout.json"
+    result = CliRunner().invoke(
+        app,
+        [
+            "eval",
+            "--alerts",
+            str(default_heldout_alerts_dir()),
+            "--labels",
+            str(default_heldout_labels_path()),
+            "--json",
+            str(destination),
+        ],
+    )
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout.startswith(safety_banner())
+    exact = format_ratio(report.exact_matches, 30, report.accuracy)
+    within = format_ratio(report.within_one_matches, 30, report.within_one_accuracy)
+    assert f"Exact-match accuracy: {exact}." in result.stdout
+    assert f"Within-one-level accuracy: {within}." in result.stdout
+    assert "Labeled alerts: 30 of 30 loaded." in result.stdout
+    assert "Rows are labeled severity. Columns are predicted severity." in result.stdout
+    assert HELD_OUT_CAVEAT in result.stdout
+    for mismatch in report.mismatches:
+        assert (
+            f"{mismatch.alert_id}: labeled {mismatch.labeled.value}, "
+            f"predicted {mismatch.predicted.value}"
+        ) in result.stdout
+
+    payload = json.loads(destination.read_text(encoding="utf-8"))
+    assert payload["labeled_count"] == 30
+    assert payload["accuracy"] == report.accuracy
+    assert payload["within_one_matches"] == report.within_one_matches
+    assert payload["within_one_accuracy"] == report.within_one_accuracy
+    assert len(payload["confusion_matrix"]) == 5
+    assert len(payload["mismatches"]) == 30 - report.exact_matches

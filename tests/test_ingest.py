@@ -14,12 +14,14 @@ import pytest
 from soc_triage.ingest import (
     FixtureLoadError,
     default_alerts_dir,
+    default_heldout_alerts_dir,
+    default_heldout_labels_path,
     default_labels_path,
     load_alerts,
     load_labels,
     parse,
 )
-from soc_triage.models import CATEGORIES, Severity
+from soc_triage.models import CATEGORIES, Alert, Severity
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC_NETS = (
@@ -60,8 +62,12 @@ def _example_host(host: str) -> bool:
 def test_default_paths_point_at_repo_fixtures() -> None:
     assert default_alerts_dir() == ROOT / "fixtures" / "alerts"
     assert default_labels_path() == ROOT / "fixtures" / "labels.json"
+    assert default_heldout_alerts_dir() == ROOT / "fixtures" / "heldout" / "alerts"
+    assert default_heldout_labels_path() == ROOT / "fixtures" / "heldout" / "labels.json"
     names = {path.name for path in default_alerts_dir().glob("*.json")}
     assert SEED_FILES <= names
+    heldout_names = {path.name for path in default_heldout_alerts_dir().glob("*.json")}
+    assert SEED_FILES <= heldout_names
 
 
 def test_bundled_fixtures_validate_and_cover_categories() -> None:
@@ -147,10 +153,39 @@ def test_labels_are_a_subset_of_known_alerts() -> None:
     assert "5737" in labels.provenance
 
 
+def test_heldout_set_loads_and_is_fully_labeled() -> None:
+    alerts = load_alerts(default_heldout_alerts_dir())
+    labels = load_labels(default_heldout_labels_path())
+    tuning = load_alerts(default_alerts_dir())
+    assert len(alerts) == 30
+    counts = Counter(alert.category for alert in alerts)
+    assert set(CATEGORIES) <= set(counts)
+    assert all(counts[name] >= 4 for name in CATEGORIES)
+    alert_ids = {alert.id for alert in alerts}
+    label_ids = {label.id for label in labels.labels}
+    assert label_ids == alert_ids
+    assert alert_ids.isdisjoint({alert.id for alert in tuning})
+    assert labels.held_out is True
+    assert labels.dataset == "synthetic-soc-triage-heldout"
+    assert {label.severity for label in labels.labels} == set(Severity)
+    assert "before any eval run" in labels.provenance
+    assert "5737" in labels.provenance
+    assert "synthetic" in labels.description.lower()
+    heldout_blob = "\n".join(
+        path.read_text(encoding="utf-8") for path in default_heldout_alerts_dir().glob("*.json")
+    )
+    heldout_blob += default_heldout_labels_path().read_text(encoding="utf-8")
+    _assert_synthetic(alerts, heldout_blob)
+
+
 def test_fixtures_stay_synthetic() -> None:
     alerts = load_alerts(default_alerts_dir())
     blob = "\n".join(path.read_text(encoding="utf-8") for path in default_alerts_dir().glob("*.json"))
     blob += (ROOT / "fixtures" / "labels.json").read_text(encoding="utf-8")
+    _assert_synthetic(alerts, blob)
+
+
+def _assert_synthetic(alerts: list[Alert], blob: str) -> None:
     lowered = blob.lower()
     for word in BANNED:
         assert word not in lowered

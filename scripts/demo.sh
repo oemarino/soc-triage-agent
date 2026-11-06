@@ -16,3 +16,6 @@ soc-triage run fixtures/alerts
 echo
 echo "== soc-triage eval =="
 soc-triage eval
+echo
+echo "== soc-triage eval fixtures/heldout =="
+soc-triage eval --alerts fixtures/heldout/alerts --labels fixtures/heldout/labels.json
