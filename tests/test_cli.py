@@ -68,8 +68,9 @@ def test_run_rejects_bad_json_and_unknown_format(tmp_path: Path) -> None:
     assert "markdown or json" in unknown.stderr
 
 
-def test_eval_remains_a_stub() -> None:
-    result = RUNNER.invoke(app, ["eval"])
+def test_eval_command_is_registered() -> None:
+    result = RUNNER.invoke(app, ["eval", "--help"])
     assert result.exit_code == 0
-    assert result.stdout.startswith(safety_banner())
-    assert "T5" in result.stdout
+    assert "--alerts" in result.stdout
+    assert "--labels" in result.stdout
+    assert "--json" in result.stdout

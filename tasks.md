@@ -20,7 +20,7 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
   `soc-triage run fixtures/alerts` → ranked JSON + markdown summary; synthetic-mode banner.  
   **Done when:** one command demos end-to-end without API keys.
 
-- [ ] **T5 — Eval harness**  
+- [x] **T5 — Eval harness**  
   Compare predictions to labels; print accuracy + confusion-style summary.  
   **Done when:** `soc-triage eval` reports metrics on labeled set; documented in README.
 

@@ -27,11 +27,7 @@ def test_schema_modules_import() -> None:
 
 
 def test_remaining_stubs_name_their_task() -> None:
-    for name in (
-        "soc_triage.notes",
-        "soc_triage.cli",
-        "soc_triage.eval",
-    ):
+    for name in ("soc_triage.notes",):
         module = importlib.import_module(name)
         assert isinstance(module.TODO, str)
         assert module.TODO.startswith("T")

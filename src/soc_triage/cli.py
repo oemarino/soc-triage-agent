@@ -1,7 +1,7 @@
 """Command-line interface.
 
 `run` triages a fixture file or directory with the rules path.
-TODO(T5): `soc-triage eval` reports metrics against fixtures/labels.json.
+`eval` compares those scores to a label file.
 Every real run states synthetic/demo mode. No API key required.
 """
 
@@ -11,10 +11,15 @@ from pathlib import Path
 
 import typer
 
-from soc_triage.ingest import FixtureLoadError, load_alerts
+from soc_triage.eval import EvalError, evaluate, render_eval_json, render_eval_markdown
+from soc_triage.ingest import (
+    FixtureLoadError,
+    default_alerts_dir,
+    default_labels_path,
+    load_alerts,
+    load_labels,
+)
 from soc_triage.report import build_report, render_json, render_markdown
-
-TODO = "T5"
 
 app = typer.Typer(
     add_completion=False,
@@ -93,8 +98,37 @@ def run_command(
 
 
 @app.command("eval")
-def eval_command() -> None:
-    """Score predictions against labels. Implemented in T5."""
-    typer.echo(safety_banner())
-    typer.echo("soc-triage eval is not implemented yet. See T5 in tasks.md.")
-    raise typer.Exit(code=0)
+def eval_command(
+    alerts: Path = typer.Option(
+        default_alerts_dir(),
+        "--alerts",
+        help="JSON alert file or directory. Default: fixtures/alerts.",
+    ),
+    labels: Path = typer.Option(
+        default_labels_path(),
+        "--labels",
+        help="Label JSON file. Default: fixtures/labels.json.",
+    ),
+    json_path: Path | None = typer.Option(
+        None,
+        "--json",
+        help="Write the metrics, caveat, and mismatches to this JSON file.",
+    ),
+) -> None:
+    """Compare rule severity to labels. No API key required."""
+    try:
+        loaded_alerts = load_alerts(alerts)
+        loaded_labels = load_labels(labels)
+        report = evaluate(loaded_alerts, loaded_labels, banner=safety_banner())
+    except (FixtureLoadError, EvalError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+
+    payload = render_eval_json(report)
+    if json_path is not None:
+        try:
+            json_path.write_text(payload, encoding="utf-8")
+        except OSError as exc:
+            typer.echo(f"Could not write {json_path}: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
+    typer.echo(render_eval_markdown(report), nl=False)
