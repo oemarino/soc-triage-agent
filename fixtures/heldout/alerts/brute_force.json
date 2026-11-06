@@ -1,0 +1,139 @@
+[
+  {
+    "id": "HO-BF-001",
+    "timestamp": "2026-04-02T01:17:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "summary": "64 failed logons for demo.user21 from 203.0.113.21, then one success. Source reputation is suspicious and the account is not allowlisted.",
+      "hostname": "edge-demo-03.example.com",
+      "context_complete": true,
+      "allowlisted": false,
+      "success_after_failures": true,
+      "failure_count": 64,
+      "src_ip": "203.0.113.21",
+      "user": "demo.user21"
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "203.0.113.21",
+        "reputation": "suspicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-BF-002",
+    "timestamp": "2026-04-02T03:05:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "demo.user22",
+      "failure_count": 29,
+      "src_ip": "198.51.100.29",
+      "success_after_failures": false,
+      "hostname": "edge-demo-03.example.com",
+      "context_complete": true,
+      "allowlisted": false,
+      "summary": "29 failed logons for demo.user22 from 198.51.100.29. No successful logon. Source reputation is suspicious."
+    },
+    "iocs": [
+      {
+        "reputation": "suspicious",
+        "value": "198.51.100.29",
+        "type": "ipv4"
+      }
+    ]
+  },
+  {
+    "id": "HO-BF-003",
+    "timestamp": "2026-04-02T04:44:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "allowlisted": false,
+      "context_complete": true,
+      "success_after_failures": true,
+      "failure_count": 9,
+      "hostname": "edge-demo-04.example.com",
+      "src_ip": "192.0.2.19",
+      "user": "demo.user23",
+      "summary": "9 failed logons for demo.user23 from 192.0.2.19, then one success. Source reputation is unknown."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "192.0.2.19",
+        "reputation": "unknown"
+      }
+    ]
+  },
+  {
+    "id": "HO-BF-004",
+    "timestamp": "2026-04-02T11:12:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "summary": "7 failed logons for demo.user24 from 192.0.2.27. No success. Source reputation is unknown.",
+      "user": "demo.user24",
+      "src_ip": "192.0.2.27",
+      "failure_count": 7,
+      "success_after_failures": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "hostname": "edge-demo-04.example.com"
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "192.0.2.27",
+        "reputation": "unknown"
+      }
+    ]
+  },
+  {
+    "id": "HO-BF-005",
+    "timestamp": "2026-04-02T16:40:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "context_complete": false,
+      "allowlisted": false,
+      "hostname": "edge-demo-05.example.com",
+      "src_ip": "203.0.113.77",
+      "user": "demo.user25",
+      "summary": "Auth gateway reported failures for demo.user25 from 203.0.113.77, but the failure count and client details are missing."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "203.0.113.77",
+        "reputation": "suspicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-BF-006",
+    "timestamp": "2026-04-02T18:22:00Z",
+    "source": "demo-auth-gateway",
+    "category": "brute_force",
+    "raw_fields": {
+      "user": "svc-backup",
+      "src_ip": "203.0.113.66",
+      "failure_count": 40,
+      "success_after_failures": false,
+      "allowlisted": true,
+      "allowlist_name": "backup-svc-demo",
+      "context_complete": true,
+      "hostname": "edge-demo-05.example.com",
+      "summary": "40 failed logons for allowlisted svc-backup from 203.0.113.66. The source reputation is malicious, so the allowlist conflicts with the indicator."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "203.0.113.66",
+        "reputation": "malicious"
+      }
+    ]
+  }
+]

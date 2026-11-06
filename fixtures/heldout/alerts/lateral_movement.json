@@ -1,0 +1,142 @@
+[
+  {
+    "id": "HO-LM-001",
+    "timestamp": "2026-04-05T02:11:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "summary": "demo.admin21 reached 11 demo hosts from 203.0.113.81 outside the change window. Source reputation is malicious.",
+      "off_hours": true,
+      "account_new": true,
+      "context_complete": true,
+      "allowlisted": false,
+      "remote_service_count": 11,
+      "dest_host_count": 11,
+      "src_ip": "203.0.113.81",
+      "user": "demo.admin21"
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "203.0.113.81",
+        "reputation": "malicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-LM-002",
+    "timestamp": "2026-04-05T02:55:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "demo.user41",
+      "src_ip": "198.51.100.45",
+      "dest_host_count": 5,
+      "admin_share_connections": 5,
+      "off_hours": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "demo.user41 opened admin shares on 5 demo hosts from 198.51.100.45. Source reputation is suspicious."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "198.51.100.45",
+        "reputation": "suspicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-LM-003",
+    "timestamp": "2026-04-05T14:18:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "remote_logon_count": 1,
+      "dest_host_count": 1,
+      "dest_host": "srv-demo-21.example.com",
+      "src_host": "wrk-demo-31.example.com",
+      "src_ip": "192.0.2.61",
+      "user": "demo.user42",
+      "off_hours": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "One remote desktop session from wrk-demo-31.example.com to srv-demo-21.example.com by demo.user42 during business hours."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "192.0.2.61",
+        "reputation": "unknown"
+      }
+    ]
+  },
+  {
+    "id": "HO-LM-004",
+    "timestamp": "2026-04-05T15:02:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "summary": "Lateral-movement detector fired for demo.user43 from 192.0.2.62. Host counts and the ticket id are missing.",
+      "context_complete": false,
+      "allowlisted": false,
+      "user": "demo.user43",
+      "src_ip": "192.0.2.62"
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "192.0.2.62",
+        "reputation": "unknown"
+      }
+    ]
+  },
+  {
+    "id": "HO-LM-005",
+    "timestamp": "2026-04-05T17:40:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "allowlist_name": "patch-window",
+      "allowlisted": true,
+      "context_complete": true,
+      "off_hours": false,
+      "file_copy_count": 12,
+      "dest_host_count": 12,
+      "src_ip": "192.0.2.18",
+      "user": "svc-patch",
+      "summary": "Allowlisted svc-patch copied files to 12 demo hosts from 192.0.2.18 during the published change window."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "192.0.2.18",
+        "reputation": "allowlisted"
+      }
+    ]
+  },
+  {
+    "id": "HO-LM-006",
+    "timestamp": "2026-04-05T23:16:00Z",
+    "source": "demo-ndr",
+    "category": "lateral_movement",
+    "raw_fields": {
+      "user": "demo.user44",
+      "src_ip": "198.51.100.44",
+      "admin_share_connections": 4,
+      "dest_host_count": 4,
+      "off_hours": true,
+      "account_new": false,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "demo.user44 opened admin shares on 4 demo hosts from 198.51.100.44 after hours. Source reputation is suspicious."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "198.51.100.44",
+        "reputation": "suspicious"
+      }
+    ]
+  }
+]
