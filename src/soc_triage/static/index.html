@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SOC Triage — synthetic demo</title>
+  <style>
+    /* Geist is the open family x.ai uses for technical type. SIL OFL, see fonts/OFL.txt. */
+    @font-face {
+      font-family: "Geist";
+      src: url("/ui-assets/fonts/geist-sans.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist";
+      src: url("/ui-assets/fonts/geist-sans-500.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("/ui-assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --paper: #ffffff;
+      --tile: #f9f8f6;
+      --ink: #0a0a0a;
+      --ink-soft: rgba(10, 10, 10, 0.6);
+      --muted: #7d8187;
+      --hairline: #e1e1e1;
+      --rule: #d5d9e2;
+      --line: rgba(10, 10, 10, 0.08);
+      --line-strong: rgba(10, 10, 10, 0.14);
+      --hover: rgba(10, 10, 10, 0.04);
+      --orange: #ff6308;
+      --critical: #d73a49;
+      --high: #ff6308;
+      --medium: #8a6a12;
+      --low: #1d4e89;
+      --info: #59534d;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--paper);
+      font: 400 16px/1.5 Geist, "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: -0.01em;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 28px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .wordmark {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 99, 8, 0.1);
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    header, main { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+
+    header { padding: 56px 0 8px; }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--ink-soft);
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      font-size: 48px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.48px;
+    }
+
+    .banner, .demo-note {
+      margin: 0 0 10px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--tile);
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .banner { color: var(--ink); }
+
+    main { padding-bottom: 64px; }
+
+    form, .results {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+    }
+
+    label { display: block; font-size: 14px; font-weight: 500; }
+
+    .hint { margin: 4px 0 10px; color: var(--ink-soft); font-size: 14px; font-weight: 400; }
+
+    textarea {
+      width: 100%;
+      min-height: 7.5rem;
+      max-height: 9rem;
+      resize: vertical;
+      padding: 12px 14px;
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      background: var(--tile);
+      color: var(--ink);
+      font: 13px/1.6 "Geist Mono", ui-monospace, monospace;
+      letter-spacing: 0;
+    }
+
+    textarea::placeholder { color: rgba(10, 10, 10, 0.35); }
+
+    textarea:focus, button:focus-visible, tr:focus-visible, input:focus-visible, .file-button:focus-within {
+      outline: 2px solid transparent;
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(10, 10, 10, 0.3);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    button, .file-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      padding: 10px 18px;
+      background: transparent;
+      color: var(--ink);
+      font: 500 14px/20px Geist, "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
+      cursor: pointer;
+      transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    button.primary {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #ffffff;
+    }
+
+    button.primary:hover { background: #2e3033; }
+
+    button:hover, .file-button:hover { background: var(--hover); }
+
+    button.primary:hover { background: #2e3033; }
+
+    .file-button input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 16px;
+      color: var(--ink-soft);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    .check input { margin-top: 3px; accent-color: var(--ink); }
+
+    #status { min-height: 1.2em; margin: 12px 2px; color: var(--muted); font-size: 14px; }
+
+    #status.error { color: var(--critical); }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .count, .sev-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: 1.35;
+    }
+
+    .count.total { background: var(--ink); color: #ffffff; }
+
+    .sev-pill.sev-critical, .count.sev-critical { background: var(--critical); color: #ffffff; }
+    .sev-pill.sev-high, .count.sev-high { background: var(--high); color: #0a0a0a; }
+    .sev-pill.sev-medium, .count.sev-medium { background: var(--medium); color: #ffffff; }
+    .sev-pill.sev-low, .count.sev-low { background: var(--low); color: #ffffff; }
+    .sev-pill.sev-info, .count.sev-info { background: var(--info); color: #ffffff; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.9fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--rule);
+      border-radius: 16px;
+      background: var(--paper);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+    caption {
+      caption-side: bottom;
+      padding: 10px 12px;
+      color: var(--muted);
+      text-align: left;
+      font-size: 12px;
+    }
+
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--rule); }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    tbody tr { cursor: pointer; background: var(--paper); }
+    tbody tr.sev-critical { box-shadow: inset 3px 0 0 var(--critical); }
+    tbody tr.sev-high { box-shadow: inset 3px 0 0 var(--high); }
+    tbody tr.sev-medium { box-shadow: inset 3px 0 0 var(--medium); }
+    tbody tr.sev-low { box-shadow: inset 3px 0 0 var(--low); }
+    tbody tr.sev-info { box-shadow: inset 3px 0 0 var(--info); }
+    tbody tr:hover { background: var(--hover); }
+    tbody tr.sev-critical[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--critical), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-high[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--high), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-medium[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--medium), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-low[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--low), inset 0 0 0 1px var(--ink); background: var(--tile); }
+    tbody tr.sev-info[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--info), inset 0 0 0 1px var(--ink); background: var(--tile); }
+
+    td.id, code, .code, #draft-note, textarea {
+      font-family: "Geist Mono", ui-monospace, monospace;
+    }
+
+    td.id { font-size: 13px; }
+
+    .empty td { color: var(--muted); cursor: default; }
+
+    #detail {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--tile);
+    }
+
+    #detail h2 { margin: 0 0 10px; font-size: 16px; font-weight: 500; letter-spacing: -0.16px; }
+
+    #detail h3 {
+      margin: 16px 0 6px;
+      color: var(--muted);
+      font-family: "Geist Mono", ui-monospace, monospace;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta { margin: 0 0 6px; color: var(--ink-soft); font-size: 14px; }
+
+    .ai-label {
+      display: inline-block;
+      margin: 8px 0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 99, 8, 0.1);
+      color: var(--orange);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    #reasons { margin: 0; padding-left: 18px; font-size: 14px; }
+    #reasons li { margin: 6px 0; }
+    .code {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(10, 10, 10, 0.06);
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    #draft-note {
+      margin: 0;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.6;
+      letter-spacing: 0;
+    }
+
+    @media (max-width: 900px) {
+      .topbar { padding: 0 16px; }
+      header, main { width: min(1180px, calc(100% - 32px)); }
+      .split { grid-template-columns: 1fr; }
+      h1 { font-size: 36px; }
+      header { padding-top: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="wordmark">SOC Triage</span>
+    <span class="badge">Synthetic demo</span>
+  </div>
+  <header>
+    <p class="eyebrow">Synthetic demo · not a SIEM</p>
+    <h1>SOC Triage</h1>
+    <p class="banner" id="page-banner">
+      Synthetic/demo mode. This tool recommends severity and drafts notes; a human makes the final call. No auto-close, auto-block, or external notify.
+    </p>
+    <p class="demo-note">
+      This page is served by <code>soc-triage serve</code> on 127.0.0.1. No authentication. Demo only. Send synthetic alerts only.
+    </p>
+  </header>
+  <main>
+    <form id="triage-form">
+      <label for="alert-json">Alert JSON</label>
+      <p class="hint">Paste one alert object or an array, upload a JSON file, or load the bundled sample fixtures. The page posts that JSON to <code>POST /triage/batch</code>.</p>
+      <textarea id="alert-json" name="alerts" spellcheck="false" placeholder='{"id":"SYN-EXAMPLE","timestamp":"2026-03-10T02:14:00Z","source":"demo-auth-gateway","category":"brute_force","raw_fields":{"summary":"Synthetic example."}}'></textarea>
+      <div class="actions">
+        <button class="primary" id="triage-button" type="submit">Triage</button>
+        <button id="load-sample" type="button">Load sample fixtures</button>
+        <label class="file-button" for="alert-file">Upload JSON
+          <input id="alert-file" type="file" accept="application/json,.json">
+        </label>
+      </div>
+      <label class="check" for="llm-notes">
+        <input id="llm-notes" name="llm_notes" type="checkbox">
+        <span>Rewrite the draft note with the configured model. Off by default. This sends <code>llm_notes=true</code> only when the box is checked, and a rewrite runs only when <code>SOC_TRIAGE_LLM_PROVIDER</code> is configured. Severity, confidence, and reasons stay with the rules. No API key is required for this page.</span>
+      </label>
+    </form>
+    <p id="status" role="status"></p>
+    <section class="results" aria-label="Ranked alerts">
+      <div class="summary">
+        <span class="count total" id="total-count">No alerts yet</span>
+        <ul class="legend" aria-label="Severity colors">
+          <li><span class="sev-pill sev-critical">critical</span></li>
+          <li><span class="sev-pill sev-high">high</span></li>
+          <li><span class="sev-pill sev-medium">medium</span></li>
+          <li><span class="sev-pill sev-low">low</span></li>
+          <li><span class="sev-pill sev-info">info</span></li>
+        </ul>
+        <div id="counts"></div>
+      </div>
+      <div class="split">
+        <div class="table-wrap">
+          <table id="ranked">
+            <caption>Ranked by severity, then confidence. Highest severity first.</caption>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Alert id</th>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Confidence</th>
+                <th>Needs review</th>
+              </tr>
+            </thead>
+            <tbody id="ranked-body">
+              <tr class="empty">
+                <td colspan="6">Paste JSON, upload a file, or load the sample fixtures.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <aside id="detail">
+          <h2>Cited reasons and draft note</h2>
+          <p id="detail-empty">Select a row to read the cited rule reasons and the draft analyst note.</p>
+          <div id="detail-body" hidden>
+            <p class="meta" id="detail-id"></p>
+            <p class="meta">
+              <span class="sev-pill" id="detail-severity"></span>
+              confidence <span id="detail-confidence"></span>
+              · needs review <span id="detail-review"></span>
+            </p>
+            <p class="meta">note_source: <span id="note-source-value"></span></p>
+            <p class="ai-label" id="ai-label" hidden>AI-drafted, analyst review required.</p>
+            <p class="hint" id="fallback-note" hidden>The template note was kept. A rewrite runs only when the box is checked and SOC_TRIAGE_LLM_PROVIDER is configured.</p>
+            <h3>Rule reasons</h3>
+            <ul id="reasons"></ul>
+            <h3>Draft note</h3>
+            <pre id="draft-note"></pre>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <script>
+    const SEVERITIES = ["critical", "high", "medium", "low", "info"];
+    const form = document.getElementById("triage-form");
+    const alertJson = document.getElementById("alert-json");
+    const alertFile = document.getElementById("alert-file");
+    const loadSample = document.getElementById("load-sample");
+    const llmNotes = document.getElementById("llm-notes");
+    const statusEl = document.getElementById("status");
+    const countsEl = document.getElementById("counts");
+    const totalCount = document.getElementById("total-count");
+    const tbody = document.getElementById("ranked-body");
+    const pageBanner = document.getElementById("page-banner");
+    const detailEmpty = document.getElementById("detail-empty");
+    const detailBody = document.getElementById("detail-body");
+    const detailId = document.getElementById("detail-id");
+    const detailSeverity = document.getElementById("detail-severity");
+    const detailConfidence = document.getElementById("detail-confidence");
+    const detailReview = document.getElementById("detail-review");
+    const noteSourceValue = document.getElementById("note-source-value");
+    const aiLabel = document.getElementById("ai-label");
+    const fallbackNote = document.getElementById("fallback-note");
+    const reasonsEl = document.getElementById("reasons");
+    const draftNote = document.getElementById("draft-note");
+    let current = [];
+
+    function severityClass(value) {
+      return SEVERITIES.indexOf(value) >= 0 ? "sev-" + value : "sev-info";
+    }
+
+    function setStatus(message, isError) {
+      statusEl.textContent = message;
+      statusEl.className = isError ? "error" : "";
+    }
+
+    function parseAlerts(text) {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        throw new Error("Paste alert JSON, upload a file, or load the sample fixtures.");
+      }
+      let data;
+      try {
+        data = JSON.parse(trimmed);
+      } catch (error) {
+        throw new Error("Alert JSON could not be parsed. Use one object or an array of objects.");
+      }
+      if (Array.isArray(data)) {
+        if (data.length === 0) {
+          throw new Error("The alert list is empty.");
+        }
+        return data;
+      }
+      if (data && typeof data === "object") {
+        return [data];
+      }
+      throw new Error("Alert JSON must be an object or a list of objects.");
+    }
+
+    async function errorMessage(response) {
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = null;
+      }
+      if (payload && typeof payload.detail === "string") {
+        return payload.detail;
+      }
+      if (payload && Array.isArray(payload.detail)) {
+        return payload.detail.map(function (item) {
+          return item && item.msg ? item.msg : "Invalid alert JSON";
+        }).join(" ");
+      }
+      return "Triage failed (" + response.status + ").";
+    }
+
+    function renderCounts(body) {
+      totalCount.textContent = body.count + (body.count === 1 ? " alert" : " alerts");
+      countsEl.replaceChildren();
+      SEVERITIES.forEach(function (level) {
+        const chip = document.createElement("span");
+        chip.className = "count " + severityClass(level);
+        const value = body.severity_counts && body.severity_counts[level];
+        chip.textContent = (value == null ? 0 : value) + " " + level;
+        countsEl.appendChild(chip);
+      });
+    }
+
+    function selectRow(index) {
+      const row = current[index];
+      if (!row) {
+        return;
+      }
+      Array.prototype.forEach.call(tbody.querySelectorAll("tr"), function (tr, rowIndex) {
+        tr.setAttribute("aria-selected", rowIndex === index ? "true" : "false");
+      });
+      detailEmpty.hidden = true;
+      detailBody.hidden = false;
+      detailId.textContent = row.id + " · " + row.category;
+      detailSeverity.textContent = row.severity;
+      detailSeverity.className = "sev-pill " + severityClass(row.severity);
+      detailConfidence.textContent = Number(row.confidence).toFixed(2);
+      detailReview.textContent = row.needs_review ? "yes" : "no";
+      noteSourceValue.textContent = row.note_source;
+      aiLabel.hidden = row.note_source !== "llm";
+      fallbackNote.hidden = !(llmNotes.checked && row.note_source === "rules");
+      reasonsEl.replaceChildren();
+      (row.reasons || []).forEach(function (reason) {
+        const item = document.createElement("li");
+        const code = document.createElement("span");
+        code.className = "code";
+        code.textContent = reason.code || "";
+        item.appendChild(code);
+        item.appendChild(document.createTextNode(reason.message || ""));
+        reasonsEl.appendChild(item);
+      });
+      draftNote.textContent = row.note || "";
+    }
+
+    function renderTable(body) {
+      current = body.results || [];
+      tbody.replaceChildren();
+      current.forEach(function (row, index) {
+        const tr = document.createElement("tr");
+        tr.className = severityClass(row.severity);
+        tr.tabIndex = 0;
+        tr.setAttribute("aria-selected", "false");
+        const cells = [
+          String(index + 1),
+          row.id,
+          row.category,
+          row.severity,
+          Number(row.confidence).toFixed(2),
+          row.needs_review ? "yes" : "no",
+        ];
+        cells.forEach(function (value, cellIndex) {
+          const td = document.createElement("td");
+          if (cellIndex === 1) {
+            td.className = "id";
+          }
+          if (cellIndex === 3) {
+            const pill = document.createElement("span");
+            pill.className = "sev-pill " + severityClass(row.severity);
+            pill.textContent = value;
+            td.appendChild(pill);
+          } else {
+            td.textContent = value;
+          }
+          tr.appendChild(td);
+        });
+        tr.addEventListener("click", function () { selectRow(index); });
+        tr.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            selectRow(index);
+          }
+        });
+        tbody.appendChild(tr);
+      });
+      if (current.length > 0) {
+        selectRow(0);
+      }
+    }
+
+    async function triage(alerts) {
+      const params = new URLSearchParams();
+      if (llmNotes.checked) {
+        params.set("llm_notes", "true");
+      }
+      const query = params.toString();
+      const url = "/triage/batch" + (query ? "?" + query : "");
+      setStatus("Ranking " + alerts.length + " alert" + (alerts.length === 1 ? "" : "s") + "…", false);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(alerts),
+      });
+      if (!response.ok) {
+        throw new Error(await errorMessage(response));
+      }
+      const body = await response.json();
+      if (body.banner) {
+        pageBanner.textContent = body.banner;
+      }
+      renderCounts(body);
+      renderTable(body);
+      setStatus("Ranked " + body.count + " alerts. Highest severity is first. Select a row for the cited reasons and the draft note.", false);
+    }
+
+    async function submitAlerts() {
+      try {
+        await triage(parseAlerts(alertJson.value));
+      } catch (error) {
+        setStatus(error.message || "Triage failed.", true);
+      }
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      submitAlerts();
+    });
+
+    loadSample.addEventListener("click", async function () {
+      setStatus("Loading bundled sample fixtures…", false);
+      try {
+        const response = await fetch("/fixtures/sample");
+        if (!response.ok) {
+          throw new Error(await errorMessage(response));
+        }
+        const alerts = await response.json();
+        alertJson.value = JSON.stringify(alerts, null, 2);
+        await triage(alerts);
+      } catch (error) {
+        setStatus(error.message || "Could not load the sample fixtures.", true);
+      }
+    });
+
+    alertFile.addEventListener("change", function () {
+      const file = alertFile.files && alertFile.files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function () {
+        alertJson.value = String(reader.result || "");
+        submitAlerts();
+      };
+      reader.onerror = function () {
+        setStatus("Could not read that file.", true);
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>

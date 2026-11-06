@@ -216,8 +216,9 @@ def serve_command(
         ),
     ),
 ) -> None:
-    """Serve the local triage API. Loopback only unless you change --host.
+    """Serve the local demo page and triage API. Loopback only unless you change --host.
 
+    Open http://127.0.0.1:8000/ for the page. API docs are at /docs.
     This demo does not authenticate callers. Add authentication before any
     network exposure. Install the extra with: pip install -e ".[api]"
     """
@@ -234,7 +235,7 @@ def serve_command(
 
     typer.echo(safety_banner(), err=True)
     typer.echo(
-        f"Local demo API at http://{chosen}:{port} (docs at /docs). "
+        f"Local demo at http://{chosen}:{port}/ (API docs at /docs). "
         "No authentication. Synthetic alerts only.",
         err=True,
     )

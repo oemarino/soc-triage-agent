@@ -43,8 +43,9 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
 - [x] **T9 — More fixtures + held-out eval**  
   30 synthetic alerts in `fixtures/heldout/`, labeled from the severity definitions before scoring, plus five more labels on the existing tuning set (50 labeled alerts in total). `soc-triage eval --alerts fixtures/heldout/alerts --labels fixtures/heldout/labels.json` reports exact-match accuracy, within-one-level accuracy, and a confusion matrix.  
   **Done when:** the held-out file is committed before the eval run; README reports the tuning score and the held-out score with an error analysis; `rules.py` is unchanged.
-- [ ] **T10 — Minimal UI** (optional)  
-  Streamlit or simple Next page over the API — only after P0 solid.
+- [x] **T10 — Minimal UI**  
+  `GET /` on the FastAPI app serves one static HTML page (vanilla CSS and JS, no build step, no frontend package). Paste JSON, upload a file, or load the bundled fixtures; the page calls `POST /triage/batch`. Ranked table, color-coded by severity, with confidence and alert id/type. A row shows the cited rule reasons, the draft note, `note_source`, and `AI-drafted, analyst review required.` when the note source is `llm`. The model checkbox is off by default and only sends `llm_notes=true`. Loopback bind and no authentication are unchanged.  
+  **Done when:** TestClient checks `GET /` is 200 and contains the page; existing API results and eval numbers stay the same; README has a Web UI section and `docs/web-ui.png`.
 
 ## Definition of done (project)
 All P0 tasks complete, tests green, limitations documented, constitution still accurate.

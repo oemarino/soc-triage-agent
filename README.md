@@ -13,7 +13,7 @@ Junior analysts lose time on noisy, unsorted alerts. This project is the practic
 - Draft a template analyst note that cites those reasons and the alert fields (`notes.draft_note`). That template is the default.
 - `soc-triage run` prints a ranked markdown summary, or JSON, with a synthetic-mode banner first. `--llm-notes` is off. When it is on, and only then, a configured model may rewrite the note text.
 - `soc-triage eval` compares the rules to a label file and prints exact-match accuracy, within-one-level accuracy, per-severity precision and recall, a confusion matrix, and any mismatches. The default file is the tuning set. `--alerts` and `--labels` point the same command at `fixtures/heldout`. Eval never calls a model.
-- `soc-triage serve` exposes that same path on `127.0.0.1:8000` when you install the `api` extra. `POST /triage` scores one alert. `POST /triage/batch` ranks a list. LLM notes stay off unless the request opts in. The process has no authentication.
+- `soc-triage serve` exposes that same path on `127.0.0.1:8000` when you install the `api` extra. `POST /triage` scores one alert. `POST /triage/batch` ranks a list. `GET /` is a single demo page that posts to that batch route. LLM notes stay off unless the request opts in. The process has no authentication.
 - No API key and no network on the default path. `pytest` covers that path with mocked HTTP only.
 
 ## Architecture
@@ -23,7 +23,9 @@ Junior analysts lose time on noisy, unsorted alerts. This project is the practic
 ```mermaid
 flowchart TD
     alerts["fixtures/alerts/*.json"] --> ingest["ingest.load_alerts"]
-    http["POST /triage and /triage/batch"] --> validate["Alert model"]
+    page["GET / static page"] --> batch["POST /triage/batch"]
+    single["POST /triage"] --> validate["Alert model"]
+    batch --> validate
     ingest --> report["report.build_report"]
     validate --> report
     report --> rules["rules.score_alert"]
@@ -60,10 +62,10 @@ The phase docs at the repo root are the source of truth. Code follows them one t
 | 1. Constitution | [constitution.md](constitution.md) | Non-negotiables: synthetic data only, no offensive tooling, human review, secrets stay out of git |
 | 2. Spec | [spec.md](spec.md) | Users, goals, non-goals, and success metrics |
 | 3. Plan | [plan.md](plan.md) | Stack, severity model, and repository layout |
-| 4. Tasks | [tasks.md](tasks.md) | Ordered work. P0 (T1–T6) is the CLI. T7 is the optional note rewrite. T8 is the local API. |
+| 4. Tasks | [tasks.md](tasks.md) | Ordered work. P0 (T1–T6) is the CLI. T7 is the optional note rewrite. T8 is the local API. T10 is the demo page. |
 | 5. Implement | `src/soc_triage/` | The package those tasks produced |
 
-T7 can rewrite a draft note. It stays off unless `--llm-notes` and provider settings are both present. T8 serves the same rules path on localhost. The request flag `llm_notes` defaults to false. T9 adds `fixtures/heldout/`: 30 alerts labeled before the rules scored them. The tuning set and the held-out set are reported separately below. The held-out numbers are the rules engine only. The API does not change them.
+T7 can rewrite a draft note. It stays off unless `--llm-notes` and provider settings are both present. T8 serves the same rules path on localhost. The request flag `llm_notes` defaults to false. T9 adds `fixtures/heldout/`: 30 alerts labeled before the rules scored them. The tuning set and the held-out set are reported separately below. The held-out numbers are the rules engine only. The API and the web page do not change them. T10 is one HTML page on that same process.
 
 Cursor reads the same safety rules from `.cursor/rules/soc-triage.mdc`.
 
@@ -140,9 +142,9 @@ The API is an optional extra. `pip install -e ".[dev]"` includes it, so `pytest`
 soc-triage serve
 ```
 
-That listens on `127.0.0.1:8000`. Docs are at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). `--host` and `--port` change the bind. The process does not authenticate callers and does not send a CORS wildcard. Treat it as a local demo. Add authentication before you bind anything other than loopback. A non-loopback `--host` prints that warning, then starts.
+That listens on `127.0.0.1:8000`. The demo page is at [http://127.0.0.1:8000/](http://127.0.0.1:8000/). Docs are at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). `--host` and `--port` change the bind. The process does not authenticate callers and does not send a CORS wildcard. Treat it as a local demo. Add authentication before you bind anything other than loopback. A non-loopback `--host` prints that warning, then starts.
 
-`POST /triage` takes one alert object, the same JSON the `Alert` model already validates. `POST /triage/batch` takes a JSON array of at most 500 alerts. Bodies larger than 1 MiB are rejected. Invalid JSON is HTTP 422 and the body has no stack trace. `GET /fixtures/demo` triages the bundled files under `fixtures/alerts`. `GET /health` returns `{"status":"ok","mode":"synthetic"}`.
+`POST /triage` takes one alert object, the same JSON the `Alert` model already validates. `POST /triage/batch` takes a JSON array of at most 500 alerts. Bodies larger than 1 MiB are rejected. Invalid JSON is HTTP 422 and the body has no stack trace. `GET /fixtures/demo` triages the bundled files under `fixtures/alerts`. `GET /fixtures/sample` returns those same alerts unscored, which is what the page loads. `GET /health` returns `{"status":"ok","mode":"synthetic"}`. `GET /` is the page described under Web UI.
 
 This is a real `POST /triage` of `SYN-BF-001` from `fixtures/alerts/brute_force.json`. The body below is the response from that command on a local `soc-triage serve`, pretty-printed. LLM notes were left off:
 
@@ -182,6 +184,20 @@ python -c 'import json,sys; json.dump(json.load(open("fixtures/alerts/brute_forc
 ```
 
 `POST /triage/batch` returns those same rows ranked like `soc-triage run`, plus `severity_counts`. On the 25 tuning alerts that is 4 critical, 4 high, 5 medium, 5 low, and 7 info.
+
+## Web UI
+
+`soc-triage serve` serves one page at [http://127.0.0.1:8000/](http://127.0.0.1:8000/). It is the same local demo as the API. The process binds `127.0.0.1` unless you change `--host`. It does not authenticate callers. This is demo-only. It is not a case-management console and it is not a SIEM. Add authentication before you bind anything other than loopback. Send synthetic alerts only.
+
+The page is a single HTML file (`src/soc_triage/static/index.html`) with vanilla CSS and JavaScript. There is no frontend build and no extra package. It uses the x.ai light theme: a white canvas, near-black ink, pill buttons, and hairline cards. Type is Geist, the open family, served from the same process. Severity stays color-coded on top of that chrome. Paste alert JSON, upload a `.json` file, or choose **Load sample fixtures**. One alert object or an array of alerts both work. Each of those actions posts the JSON to `POST /triage/batch`. **Load sample fixtures** first reads `GET /fixtures/sample`, the unscored contents of `fixtures/alerts`, and then posts that list.
+
+The table is the server ranking: highest severity first, then confidence. Each severity has its own color. Columns are rank, alert id, type, severity, confidence, and needs review. Select a row to read the cited rule reasons and the draft analyst note, including `note_source`.
+
+The model checkbox is unchecked. Checking it adds `llm_notes=true` on that request. A rewrite still runs only when `SOC_TRIAGE_LLM_PROVIDER` is `openai_compatible` and a base URL and model are set. The page does not ask for an API key. With the box unchecked, the request omits the flag and the template note is kept. `soc-triage serve --llm-notes` still opts every request in, including requests from this page, because that server flag already did. A model note shows `note_source` `llm` and the label `AI-drafted, analyst review required.`
+
+![Ranked triage table for the bundled sample alerts](docs/web-ui.png)
+
+The screenshot is the bundled 25-alert sample after **Load sample fixtures**, with the first row open. LLM notes were left off. The counts are 4 critical, 4 high, 5 medium, 5 low, and 7 info.
 
 ## Sample output
 
@@ -296,9 +312,10 @@ The misses sit on round count cutoffs (29, 9 then success, spread of 4) and on a
 
 - Built a Python CLI that ranks synthetic SOC alerts across 5 categories (brute force, phishing URL, malware hash, lateral movement, and policy noise) and drafts analyst notes a person can edit. Severity, confidence, and reasons come from deterministic rules. The default path needs no API key and makes no network call.
 - `soc-triage run` on the 25-alert tuning set prints a ranked summary (4 critical, 4 high, 5 medium, 5 low, 7 info). `soc-triage eval` reports exact-match accuracy, within-one-level accuracy, and a confusion matrix.
-- Tuning-set exact match is 20/20 (100%) because the rules were written against those alerts. Held-out exact match is 24/30 (80%), and within one level is 27/30 (90%), on 30 alerts labeled before any scoring run. 87 pytest tests pass with no secrets.
+- Tuning-set exact match is 20/20 (100%) because the rules were written against those alerts. Held-out exact match is 24/30 (80%), and within one level is 27/30 (90%), on 30 alerts labeled before any scoring run. 90 pytest tests pass with no secrets.
 - Optional `--llm-notes` rewrites the draft through an OpenAI-compatible endpoint (xAI Grok, OpenAI, or local Ollama). The call is off unless the flag and provider config are both set. Missing config, timeout, or invalid text keeps the template note. The model cannot change severity.
 - Served that same rules path from a local FastAPI process (`soc-triage serve` on 127.0.0.1). `POST /triage` and `POST /triage/batch` return severity, confidence, needs_review, cited reasons, and a draft note. LLM notes stay off unless the caller opts in. The service does not authenticate callers.
+- Added a localhost demo page on that same process: paste, upload, or load the sample alerts, post them to `POST /triage/batch`, and read a color-coded ranked table with the cited reasons and a draft note. The model checkbox stays off unless the analyst checks it. The page has no authentication and is a demo only.
 
 ## Limitations
 
@@ -309,15 +326,16 @@ The misses sit on round count cutoffs (29, 9 then success, spread of 4) and on a
 - Notes are templates unless you opt in with `--llm-notes` or, on the local API, `llm_notes=true` or `soc-triage serve --llm-notes`, and `SOC_TRIAGE_LLM_PROVIDER=openai_compatible` with a base URL and a model. That path sends the alert's structured fields and the rule reasons to the host you configure. Use synthetic fixtures only. Do not point it at real incidents.
 - The model can still write fluent prose that misstates a fact. The tool checks that the text is non-empty and at most 2000 characters. It does not fact-check the prose. Read `note_source` and the rule reasons, and treat `llm` text as untrusted. A human still decides.
 - Each alert is one request. A hung server waits up to the timeout (default 8 seconds) per alert, then the template note is used. Redirects are refused. Eval numbers do not include this path and are unchanged by it.
-- The HTTP API is a local demo. It binds `127.0.0.1:8000` unless you change `--host` and `--port`. It does not authenticate callers. Add authentication before exposing it on a network. Request bodies are limited to 1 MiB, and a batch is limited to 500 alerts. Invalid input is a 422 with no stack trace. CORS is not opened. Send synthetic alerts only.
+- The HTTP API and the page at `GET /` are a local demo. The process binds `127.0.0.1:8000` unless you change `--host` and `--port`. It does not authenticate callers. Add authentication before exposing it on a network. Request bodies are limited to 1 MiB, and a batch is limited to 500 alerts. Invalid input is a 422 with no stack trace. CORS is not opened. Send synthetic alerts only. The page is one ranked table, not case management.
 
 ## Layout
 
 ```
 constitution.md  spec.md  plan.md  tasks.md
-src/soc_triage/          ingest, rules, notes, llm, report, cli, api, eval
-tests/                   pytest (87 tests)
+src/soc_triage/          ingest, rules, notes, llm, report, cli, api, eval, static/index.html
+tests/                   pytest (90 tests)
 fixtures/alerts/         25 synthetic tuning alerts, five files
+docs/web-ui.png          screenshot of the demo page on the sample alerts
 fixtures/labels.json     20 labels for that tuning set
 fixtures/heldout/        30 labeled alerts the rules were not tuned on
 scripts/demo.sh

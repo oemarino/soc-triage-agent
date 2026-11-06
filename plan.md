@@ -65,7 +65,9 @@ src/soc_triage/
   cli.py
   api.py
   eval.py
+  static/index.html     demo page served at GET /
 tests/
+docs/web-ui.png
 fixtures/alerts/
 fixtures/labels.json          tuning labels
 fixtures/heldout/alerts/      alerts the rules were not tuned on
@@ -95,7 +97,10 @@ fixtures/heldout/labels.json
 ## Local API (T8)
 `soc-triage serve` imports FastAPI only when the `api` extra is installed (`pip install -e ".[api]"`). The base install and the CLI do not require it. The default bind is `127.0.0.1:8000`. `POST /triage` takes one `Alert`. `POST /triage/batch` takes a JSON list of at most 500. Both call `report.build_report`, so the score and the note match `soc-triage run`. `GET /fixtures/demo` triages `fixtures/alerts`. `GET /health` and `/docs` are local convenience. Request bodies are capped at 1 MiB. Invalid input is HTTP 422 with no stack trace. There is no authentication and no CORS wildcard. LLM notes stay off unless the request sets `llm_notes=true` or the process was started with `--llm-notes`. The fallback is the same template note as T7. The service is a local demo and needs authentication before any network exposure.
 
+## Minimal UI (T10)
+`GET /` returns `src/soc_triage/static/index.html`. The file is vanilla HTML, CSS, and JavaScript. There is no frontend build and no new package. Paste a JSON object or array, upload a `.json` file, or load the bundled fixtures. Loading fixtures calls `GET /fixtures/sample` (the unscored `fixtures/alerts` list) and then `POST /triage/batch`. The other two actions post straight to `POST /triage/batch`. The table uses the server ranking and colors each severity. Selecting a row shows the rule reasons, the draft note, and `note_source`. The model checkbox is unchecked; checking it adds `llm_notes=true`. The page does not collect an API key. `soc-triage serve` still binds `127.0.0.1` by default and still does not authenticate callers. The screenshot is `docs/web-ui.png`.
+
 ## Phased delivery
 - **P0:** schema, fixtures, rules, CLI, tests, eval
 - **P1:** optional LLM notes (T7), FastAPI read API (T8)
-- **P2:** held-out set and within-one accuracy (T9), then a tiny dashboard
+- **P2:** held-out set and within-one accuracy (T9), minimal web UI (T10)
