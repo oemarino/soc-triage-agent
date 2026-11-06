@@ -16,6 +16,11 @@ from soc_triage.models import Alert, Reason, Severity
 from soc_triage.notes import NoteRewriter, resolve_note
 from soc_triage.rules import score_alert
 
+SAFETY_BANNER = (
+    "Synthetic/demo mode. This tool recommends severity and drafts notes; "
+    "a human makes the final call. No auto-close, auto-block, or external notify."
+)
+
 SEVERITY_ORDER: tuple[Severity, ...] = (
     Severity.CRITICAL,
     Severity.HIGH,
@@ -51,6 +56,11 @@ class TriageReport(BaseModel):
     mode: str = "synthetic"
     count: int = Field(ge=0)
     results: list[RankedAlert]
+
+
+def safety_banner() -> str:
+    """Banner required on every triage run (spec: safety banner)."""
+    return SAFETY_BANNER
 
 
 def build_report(
@@ -147,12 +157,17 @@ def render_json(report: TriageReport) -> str:
     return report.model_dump_json(indent=2) + "\n"
 
 
-def _count_line(results: list[RankedAlert]) -> str:
-    parts = [
-        f"{sum(1 for row in results if row.severity is level)} {level.value}"
+def severity_counts(results: list[RankedAlert]) -> dict[str, int]:
+    """Count rows at each severity, in plan.md order."""
+    return {
+        level.value: sum(1 for row in results if row.severity is level)
         for level in SEVERITY_ORDER
-    ]
-    return " · ".join(parts)
+    }
+
+
+def _count_line(results: list[RankedAlert]) -> str:
+    counts = severity_counts(results)
+    return " · ".join(f"{counts[level.value]} {level.value}" for level in SEVERITY_ORDER)
 
 
 def _top_reasons(row: RankedAlert, limit: int = 2) -> str:

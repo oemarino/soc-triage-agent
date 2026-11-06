@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 from typer.testing import CliRunner
 
-from soc_triage.cli import app, safety_banner
+from soc_triage.cli import ApiExtraError, app, safety_banner
 
 ROOT = Path(__file__).resolve().parents[1]
 ALERTS = ROOT / "fixtures" / "alerts"
@@ -66,6 +69,47 @@ def test_run_rejects_bad_json_and_unknown_format(tmp_path: Path) -> None:
     unknown = RUNNER.invoke(app, ["run", str(ALERTS), "--format", "xml"])
     assert unknown.exit_code == 2
     assert "markdown or json" in unknown.stderr
+
+
+def test_serve_help_documents_loopback_and_no_auth() -> None:
+    result = RUNNER.invoke(app, ["serve", "--help"])
+    assert result.exit_code == 0
+    assert "--host" in result.stdout
+    assert "--port" in result.stdout
+    assert "127.0.0.1" in result.stdout
+    assert "--llm-notes" in result.stdout
+    assert "authentication" in result.stdout.lower()
+
+
+def test_serve_reports_a_missing_api_extra(monkeypatch) -> None:
+    def explode():
+        raise ApiExtraError('The API extra is not installed. Run: pip install -e ".[api]"')
+
+    monkeypatch.setattr("soc_triage.cli.load_api_runtime", explode)
+    result = RUNNER.invoke(app, ["serve"])
+    assert result.exit_code == 1
+    assert ".[api]" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_importing_the_cli_does_not_import_fastapi() -> None:
+    env = os.environ.copy()
+    src = str(ROOT / "src")
+    env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
+    code = (
+        "import sys\n"
+        "import soc_triage.cli\n"
+        "assert 'fastapi' not in sys.modules\n"
+        "assert 'uvicorn' not in sys.modules\n"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_eval_command_is_registered() -> None:

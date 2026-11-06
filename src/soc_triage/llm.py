@@ -43,6 +43,11 @@ MAX_NOTE_CHARS = 2000
 MAX_PROMPT_CHARS = 32_000
 MAX_RESPONSE_BYTES = 65_536
 
+SYNTHETIC_SEND_NOTICE = (
+    "Sending structured alert fields and rule reasons to the configured model. "
+    "Synthetic data only. Severity stays with the rules."
+)
+
 DATA_BEGIN = "<<<UNTRUSTED_ALERT_DATA>>>"
 DATA_END = "<<<END_UNTRUSTED_ALERT_DATA>>>"
 
@@ -276,6 +281,27 @@ class OpenAICompatibleClient:
         except OSError as exc:
             raise LlmNoteError("request failed") from exc
         return parse_chat_response(raw)
+
+
+def optional_note_client(
+    enabled: bool,
+    env: Mapping[str, str] | None = None,
+    *,
+    dotenv_path: Path | None = None,
+) -> tuple[OpenAICompatibleClient | None, str | None]:
+    """Return a note client only when the caller opted in and config allows a call.
+
+    The client is None when notes are off or the provider settings are incomplete.
+    The second item is a short warning for the operator, or None. This function
+    does not open a socket.
+    """
+    if not enabled:
+        return None, None
+    settings = load_llm_settings(env, dotenv_path=dotenv_path)
+    warning = config_warning(settings)
+    if warning is not None:
+        return None, warning
+    return OpenAICompatibleClient(settings), None
 
 
 class _RefuseRedirect(urllib.request.HTTPRedirectHandler):

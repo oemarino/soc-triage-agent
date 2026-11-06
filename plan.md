@@ -15,10 +15,10 @@
 
 ## Architecture (MVP)
 ```
-fixtures/alerts/*.json
-        │
-        ▼
-   ingest.parse ──► Alert model (pydantic)
+fixtures/alerts/*.json          POST /triage JSON body
+        │                              │
+        ▼                              ▼
+   ingest.parse ──► Alert model (pydantic) ◄── FastAPI
         │
         ▼
    triage.rules ──► Severity + confidence + reasons[]
@@ -27,6 +27,9 @@ fixtures/alerts/*.json
         │
         ▼
    report.render ──► ranked JSON + markdown summary
+        │                 │
+        ▼                 ▼
+   soc-triage run    soc-triage serve
         │
         ▼
    eval.compare ──► metrics vs labels
@@ -60,6 +63,7 @@ src/soc_triage/
   llm.py
   report.py
   cli.py
+  api.py
   eval.py
 tests/
 fixtures/alerts/
@@ -75,7 +79,7 @@ fixtures/heldout/labels.json
 2. Implement **one** `tasks.md` item per PR
 3. Cloud agent prompt = task id + acceptance criteria + link to plan section
 4. Rules-only path must always work without secrets
-5. LLM path requires `soc-triage run --llm-notes` and `SOC_TRIAGE_LLM_PROVIDER=openai_compatible`. CI and the default demo omit the flag, so they make no network call.
+5. LLM path requires an explicit opt-in (`soc-triage run --llm-notes`, `llm_notes=true`, or `soc-triage serve --llm-notes`) and `SOC_TRIAGE_LLM_PROVIDER=openai_compatible`. CI and the default demo omit the flag, so they make no network call.
 
 ## Risks & mitigations
 | Risk | Mitigation |
@@ -88,7 +92,10 @@ fixtures/heldout/labels.json
 ## Optional LLM notes (T7)
 `soc-triage run --llm-notes` rewrites note text when the provider is `openai_compatible` and the base URL and model are set. The default provider is `none`. The client posts to `{base_url}/chat/completions` with the standard library (xAI Grok at `https://api.x.ai/v1`, OpenAI, or Ollama at `http://localhost:11434/v1` with no key). Severity, confidence, `needs_review`, and reasons always come from `rules.score_alert`. The model sees delimited alert fields and rule reasons and is told not to invent facts. The timeout default is 8 seconds. Missing config, transport errors, and empty or oversized text fall back to `notes.draft_note`. JSON records `note_source` as `rules` or `llm`. Markdown marks model notes `AI-drafted, analyst review required.` Eval does not call the model.
 
+## Local API (T8)
+`soc-triage serve` imports FastAPI only when the `api` extra is installed (`pip install -e ".[api]"`). The base install and the CLI do not require it. The default bind is `127.0.0.1:8000`. `POST /triage` takes one `Alert`. `POST /triage/batch` takes a JSON list of at most 500. Both call `report.build_report`, so the score and the note match `soc-triage run`. `GET /fixtures/demo` triages `fixtures/alerts`. `GET /health` and `/docs` are local convenience. Request bodies are capped at 1 MiB. Invalid input is HTTP 422 with no stack trace. There is no authentication and no CORS wildcard. LLM notes stay off unless the request sets `llm_notes=true` or the process was started with `--llm-notes`. The fallback is the same template note as T7. The service is a local demo and needs authentication before any network exposure.
+
 ## Phased delivery
 - **P0:** schema, fixtures, rules, CLI, tests, eval
-- **P1:** optional LLM notes, FastAPI read endpoint
+- **P1:** optional LLM notes (T7), FastAPI read API (T8)
 - **P2:** held-out set and within-one accuracy (T9), then a tiny dashboard
