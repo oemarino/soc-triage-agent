@@ -30,6 +30,8 @@ Junior SOC analysts waste time on noisy, unsorted alerts. They need a fast first
 | Demo path | One command runs end-to-end on fixtures |
 | Test coverage of scoring rules | All severity rules have unit tests |
 
+T9 measures that held-out row on `fixtures/heldout/` (30 alerts, labeled before scoring). Exact-match accuracy is 24/30 (80%). Within-one-level accuracy is 27/30 (90%). Together with 20 tuning labels, the labeled sample is 50 alerts. The tuning-set score is 20/20 on the alerts the rules were written against.
+
 ## Functional requirements
 1. **Alert schema** — id, timestamp, source, category, raw fields, optional IOCs
 2. **Rules engine** — deterministic severity scoring from category + field heuristics

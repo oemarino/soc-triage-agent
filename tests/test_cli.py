@@ -74,3 +74,5 @@ def test_eval_command_is_registered() -> None:
     assert "--alerts" in result.stdout
     assert "--labels" in result.stdout
     assert "--json" in result.stdout
+    assert "fixtures/heldout/alerts" in result.stdout
+    assert "fixtures/heldout/labels.json" in result.stdout

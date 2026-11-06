@@ -62,7 +62,9 @@ src/soc_triage/
   eval.py
 tests/
 fixtures/alerts/
-fixtures/labels.json
+fixtures/labels.json          tuning labels
+fixtures/heldout/alerts/      alerts the rules were not tuned on
+fixtures/heldout/labels.json
 .env.example
 .cursor/rules/ (or AGENTS.md) — mirror constitution safety
 ```
@@ -85,4 +87,4 @@ fixtures/labels.json
 ## Phased delivery
 - **P0:** schema, fixtures, rules, CLI, tests, eval
 - **P1:** optional LLM notes, FastAPI read endpoint
-- **P2:** tiny dashboard, more datasets, better metrics
+- **P2:** held-out set and within-one accuracy (T9), then a tiny dashboard

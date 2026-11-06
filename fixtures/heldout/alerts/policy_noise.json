@@ -1,0 +1,116 @@
+[
+  {
+    "id": "HO-PN-001",
+    "timestamp": "2026-04-06T06:00:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "summary": "svc-iam-demo ran the scheduled group review on iam-demo-02.example.com. Allowlisted.",
+      "context_complete": true,
+      "allowlist_name": "scheduled-group-review",
+      "allowlisted": true,
+      "event_count": 3,
+      "hostname": "iam-demo-02.example.com",
+      "user": "svc-iam-demo"
+    }
+  },
+  {
+    "id": "HO-PN-002",
+    "timestamp": "2026-04-06T12:25:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "demo.user51",
+      "hostname": "fin-demo-11.example.com",
+      "src_ip": "192.0.2.71",
+      "removable_storage": true,
+      "policy_violation": true,
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "Removable storage mounted on fin-demo-11.example.com by demo.user51. Policy violation, no malware indicator."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "192.0.2.71",
+        "reputation": "unknown"
+      }
+    ]
+  },
+  {
+    "id": "HO-PN-003",
+    "timestamp": "2026-04-06T22:48:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "summary": "demo.user52 badged into lab-demo-08.example.com after hours. Related host context is missing.",
+      "after_hours": true,
+      "event_count": 1,
+      "allowlisted": false,
+      "context_complete": false,
+      "hostname": "lab-demo-08.example.com",
+      "user": "demo.user52"
+    }
+  },
+  {
+    "id": "HO-PN-004",
+    "timestamp": "2026-04-06T09:10:00Z",
+    "source": "demo-mail-gateway",
+    "category": "policy_noise",
+    "raw_fields": {
+      "event_count": 480,
+      "allowlisted": true,
+      "allowlist_name": "password-expiry-notices",
+      "context_complete": true,
+      "user": "svc-iam-demo",
+      "summary": "480 password-expiry notices sent to example.com mailboxes by the allowlisted mail job."
+    }
+  },
+  {
+    "id": "HO-PN-005",
+    "timestamp": "2026-04-06T13:41:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "summary": "demo.user53 on hr-demo-03.example.com triggered a data-transfer policy violation toward 203.0.113.53. That address is marked malicious.",
+      "context_complete": true,
+      "allowlisted": false,
+      "policy_violation": true,
+      "event_count": 6,
+      "src_ip": "203.0.113.53",
+      "hostname": "hr-demo-03.example.com",
+      "user": "demo.user53"
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "203.0.113.53",
+        "reputation": "malicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-PN-006",
+    "timestamp": "2026-04-06T16:05:00Z",
+    "source": "demo-policy-monitor",
+    "category": "policy_noise",
+    "raw_fields": {
+      "user": "demo.user54",
+      "hostname": "vpn-demo-04.example.com",
+      "src_ip": "198.51.100.54",
+      "policy_violation": true,
+      "removable_storage": true,
+      "allowlisted": true,
+      "allowlist_name": "corp-vpn-pool",
+      "context_complete": true,
+      "summary": "Allowlisted VPN user demo.user54 mounted removable storage on vpn-demo-04.example.com. Source reputation is suspicious, so the allowlist does not explain the violation."
+    },
+    "iocs": [
+      {
+        "type": "ipv4",
+        "value": "198.51.100.54",
+        "reputation": "suspicious"
+      }
+    ]
+  }
+]

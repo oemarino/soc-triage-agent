@@ -1,0 +1,154 @@
+[
+  {
+    "id": "HO-PH-001",
+    "timestamp": "2026-04-03T08:05:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "clicked": true,
+      "delivered": true,
+      "url": "https://mail.login.example/session",
+      "recipient": "demo.user31@example.com",
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "demo.user31@example.com clicked https://mail.login.example/session. URL and domain reputation are malicious."
+    },
+    "iocs": [
+      {
+        "type": "domain",
+        "value": "mail.login.example",
+        "reputation": "malicious"
+      },
+      {
+        "type": "url",
+        "value": "https://mail.login.example/session",
+        "reputation": "malicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-PH-002",
+    "timestamp": "2026-04-03T08:40:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "summary": "Malicious URL https://invoice.example.net/pay delivered to demo.user32@example.net. No click recorded.",
+      "context_complete": true,
+      "allowlisted": false,
+      "delivered": true,
+      "clicked": false,
+      "recipient": "demo.user32@example.net",
+      "url": "https://invoice.example.net/pay"
+    },
+    "iocs": [
+      {
+        "type": "url",
+        "value": "https://invoice.example.net/pay",
+        "reputation": "malicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-PH-003",
+    "timestamp": "2026-04-03T10:15:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "recipient": "demo.user33@example.org",
+      "url": "https://hr-forms.example.org/w4",
+      "clicked": false,
+      "delivered": true,
+      "context_complete": true,
+      "allowlisted": false,
+      "summary": "Suspicious URL https://hr-forms.example.org/w4 was delivered to demo.user33@example.org and not clicked."
+    },
+    "iocs": [
+      {
+        "type": "url",
+        "value": "https://hr-forms.example.org/w4",
+        "reputation": "suspicious"
+      },
+      {
+        "type": "domain",
+        "value": "hr-forms.example.org",
+        "reputation": "suspicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-PH-004",
+    "timestamp": "2026-04-03T11:02:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "url": "https://files.example.com/bonus",
+      "clicked": true,
+      "delivered": true,
+      "recipient": "demo.user34@example.com",
+      "allowlisted": false,
+      "context_complete": true,
+      "summary": "demo.user34@example.com clicked https://files.example.com/bonus. The URL reputation is malicious and the parent domain reputation is allowlisted."
+    },
+    "iocs": [
+      {
+        "type": "url",
+        "value": "https://files.example.com/bonus",
+        "reputation": "malicious"
+      },
+      {
+        "type": "domain",
+        "value": "files.example.com",
+        "reputation": "allowlisted"
+      }
+    ]
+  },
+  {
+    "id": "HO-PH-005",
+    "timestamp": "2026-04-03T13:28:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "context_complete": false,
+      "allowlisted": false,
+      "clicked": true,
+      "url": "https://reset.example/confirm",
+      "recipient": "demo.user35@example.com",
+      "summary": "A click on https://reset.example/confirm was reported for demo.user35@example.com. Mailbox and client context are missing."
+    },
+    "iocs": [
+      {
+        "type": "url",
+        "value": "https://reset.example/confirm",
+        "reputation": "malicious"
+      }
+    ]
+  },
+  {
+    "id": "HO-PH-006",
+    "timestamp": "2026-04-03T15:00:00Z",
+    "source": "demo-email-gateway",
+    "category": "phishing_url",
+    "raw_fields": {
+      "summary": "Allowlisted awareness drill https://drill.example/campaign sent to demo.user36@example.com. The recipient clicked it.",
+      "allowlist_name": "awareness-drill",
+      "allowlisted": true,
+      "context_complete": true,
+      "delivered": true,
+      "clicked": true,
+      "url": "https://drill.example/campaign",
+      "recipient": "demo.user36@example.com"
+    },
+    "iocs": [
+      {
+        "type": "url",
+        "value": "https://drill.example/campaign",
+        "reputation": "allowlisted"
+      },
+      {
+        "type": "domain",
+        "value": "drill.example",
+        "reputation": "allowlisted"
+      }
+    ]
+  }
+]

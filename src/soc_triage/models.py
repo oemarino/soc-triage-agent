@@ -156,7 +156,7 @@ class Label(BaseModel):
 
 
 class LabelSet(BaseModel):
-    """Labeled subset stored in ``fixtures/labels.json``."""
+    """Labeled subset stored in ``fixtures/labels.json`` or a held-out file."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -164,6 +164,7 @@ class LabelSet(BaseModel):
     dataset: str = Field(min_length=1)
     description: str = Field(min_length=1)
     provenance: str = Field(min_length=1)
+    held_out: bool = False
     labels: list[Label]
 
     @model_validator(mode="after")
