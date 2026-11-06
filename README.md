@@ -1,72 +1,90 @@
 # SOC Triage Agent
 
-Portfolio project for a cybersecurity student: a first-pass assistant that ranks **synthetic** SOC alerts and drafts analyst notes a person can edit.
+A small Python CLI that gives a junior analyst a first pass on a batch of SOC alerts: a severity, a confidence score, cited reasons, and a draft note a person can edit. It runs entirely on synthetic fixtures. It is a portfolio and practice tool, not a SIEM, and it does not connect to a live security stack.
 
-This is a learning and demo repo. It is not a SIEM, and it does not connect to a live security stack.
+## Why it exists
 
-**Status:** T5 `soc-triage eval` scores the 15 labeled fixtures and prints accuracy plus a confusion matrix. README architecture polish is still T6 (`tasks.md`).
+Junior analysts lose time on noisy, unsorted alerts. This project is the practice loop for that job: load a batch, rank what deserves attention, and leave a short note that shows its work. A human still makes the final call. The tool does not close, block, or notify anyone.
 
-## What the MVP will do
+## Features
 
-| Step | Behavior |
-|------|----------|
-| Ingest | Read a batch of structured JSON alerts from `fixtures/alerts/` |
-| Score | Assign severity and confidence with deterministic rules, plus reasons a reviewer can check |
-| Note | Draft a short analyst note that cites alert fields |
-| Demo | `soc-triage run` on fixtures, no API key |
-| Eval | Compare predicted severity to `fixtures/labels.json` |
+- Load a JSON file or a directory of alerts into a typed `Alert` model (`ingest`).
+- Score each alert with deterministic rules: category baseline, IOC reputation, burst or host-count thresholds, an allowlist downgrade, and an incomplete-context cap (`rules.score_alert`).
+- Draft a template analyst note that cites those reasons and the alert fields (`notes.draft_note`). No language-model call.
+- `soc-triage run` prints a ranked markdown summary, or JSON, with a synthetic-mode banner first.
+- `soc-triage eval` compares the rules to `fixtures/labels.json` and prints accuracy, per-severity precision and recall, a confusion matrix, and any mismatches.
+- No API key and no network. `pytest` covers the same path.
 
-A human still makes the final call. The tool will not close, block, or notify anyone.
+## Architecture
 
-## Five-phase docs (Cox-style)
+`soc-triage run` walks ingest, rules, notes, and report. `soc-triage eval` calls the same rules and compares the result to labels. Eval does not render notes.
 
-Work follows a five-phase spec workflow. The phase docs at the repo root are the source of truth; code stays inside the current task.
+```mermaid
+flowchart TD
+    alerts["fixtures/alerts/*.json"] --> ingest["ingest.load_alerts"]
+    ingest --> rules["rules.score_alert"]
+    rules --> notes["notes.draft_note"]
+    notes --> report["report.render"]
+    report --> runCmd["soc-triage run"]
+    labels["fixtures/labels.json"] --> evalStep["eval.evaluate"]
+    rules --> evalStep
+    evalStep --> evalCmd["soc-triage eval"]
+```
+
+## Severity model
+
+| Level | Meaning |
+| --- | --- |
+| critical | Likely active compromise or a high-impact indicator |
+| high | Strong malicious signal; needs prompt review |
+| medium | Suspicious; investigate in the queue |
+| low | Weak signal or incomplete context |
+| info | Noise, policy, or expected admin activity |
+
+If `context_complete` is false, the score is capped at `low` and marked `needs_review` instead of guessing critical. An allowlist hit downgrades the alert to `info` unless it conflicts with a malicious indicator.
+
+## Spec Kit workflow
+
+The phase docs at the repo root are the source of truth. Code follows them one task at a time.
 
 | Phase | File | Role |
-|-------|------|------|
-| 1. Constitution | `constitution.md` | Non-negotiables: synthetic data, no offensive tooling, human review, secrets out of git |
-| 2. Spec | `spec.md` | Users, goals, non-goals, success metrics |
-| 3. Plan | `plan.md` | Stack, architecture, severity model, repo layout |
-| 4. Tasks | `tasks.md` | Ordered work. One task at a time |
-| 5. Implement | `src/soc_triage/` | Code for the open task only |
+| --- | --- | --- |
+| 1. Constitution | [constitution.md](constitution.md) | Non-negotiables: synthetic data only, no offensive tooling, human review, secrets stay out of git |
+| 2. Spec | [spec.md](spec.md) | Users, goals, non-goals, and success metrics |
+| 3. Plan | [plan.md](plan.md) | Stack, severity model, and repository layout |
+| 4. Tasks | [tasks.md](tasks.md) | Ordered work. P0 (T1–T6) is the CLI in this README |
+| 5. Implement | `src/soc_triage/` | The package those tasks produced |
 
 Cursor reads the same safety rules from `.cursor/rules/soc-triage.mdc`.
 
-## Safety
+## Quickstart
 
-- Synthetic and demo data only. No real customer, employer, or classmate PII.
-- Detection and triage only. No exploit code, payloads, or attack tooling.
-- Rules decide severity. An optional LLM (later, T7) may help draft notes and is off unless you set a key.
-- Missing or low-confidence input fails closed to `needs_review` once scoring exists (T3).
-- `.env` is gitignored. Copy `.env.example` if you need local variables. You do not need it for tests.
-
-## Install and run
-
-Python 3.11 or newer.
+Python 3.11 or newer. No API key.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-soc-triage --help
+soc-triage run fixtures/alerts
+soc-triage eval
 ```
 
-`pytest`, `soc-triage run`, and `soc-triage eval` should work on a fresh clone with no API keys.
+On Windows, activate with `.venv\Scripts\activate`.
 
-## Demo
+`scripts/demo.sh` runs the two demo commands after the install above.
 
 ```bash
-soc-triage run fixtures/alerts
 soc-triage run fixtures/alerts --json triage.json
 soc-triage run fixtures/alerts/brute_force.json --format json
-soc-triage eval
 soc-triage eval --alerts fixtures/alerts --labels fixtures/labels.json --json eval.json
 ```
 
-`run` accepts a directory or one JSON file. It prints the synthetic-mode banner, then a markdown table ranked by severity and confidence. `--format json` prints the same ranking as JSON on stdout (the banner goes to stderr so the stream stays valid JSON). `--json PATH` always writes the full ranked results, including reasons and draft notes.
+`--format json` prints JSON on stdout and the synthetic-mode banner on stderr. `--json PATH` writes a file and still prints the human-readable report.
 
-The start of a real `soc-triage run fixtures/alerts` looks like this:
+## Sample output
+
+Opening of a real `soc-triage run fixtures/alerts`:
 
 ```text
 Synthetic/demo mode. This tool recommends severity and drafts notes; a human makes the final call. No auto-close, auto-block, or external notify.
@@ -85,49 +103,22 @@ Ranked by severity, then confidence. Recommendations only; a human makes the fin
 | 4 | SYN-PH-001 | phishing_url | critical | 0.90 | no | raw_fields.url=https://sso.login.example/reset · raw_fields.clicked=true and IOC reputation=malicious |
 ```
 
-Draft notes follow the table. Each note cites rule reasons and alert fields. Severity still comes only from the rules.
+The first draft note from that same run:
 
-## Fixtures
+```text
+### SYN-BF-001
 
-`fixtures/alerts/` holds 25 hand-authored alerts, five in each seed category: `brute_force`, `phishing_url`, `malware_hash`, `lateral_movement`, and `policy_noise`. Addresses are RFC 5737 documentation IPs. Names use RFC 2606 `example` domains. Hashes are repeated-nibble placeholders, not malware samples.
-
-`fixtures/labels.json` is ground truth for 15 of those alerts. `soc-triage eval` scores that subset. The other 10 alerts are unlabeled and are left out of the accuracy denominator. The rules were written against this same labeled set, so a perfect score here is not evidence of real-world performance.
-
-```bash
-python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; print(len(load_alerts(default_alerts_dir())))"
+Draft for SYN-BF-001 from demo-auth-gateway at 2026-03-10T02:14:00+00:00. Category brute_force. Recommended severity critical with confidence 0.90. Signals agree; a human still confirms before anyone acts. This note does not change the rule severity.
+Observation: 86 failed logons for demo.user01 from 203.0.113.10, then one success. Account is not allowlisted.
+Cited fields: raw_fields.user=demo.user01, raw_fields.src_ip=203.0.113.10, raw_fields.failure_count=86, raw_fields.success_after_failures=true, raw_fields.allowlisted=false, raw_fields.context_complete=true, raw_fields.hostname=edge-demo-01.example.com
+Rule reasons:
+- (category_baseline) category brute_force baseline is medium
+- (burst) raw_fields.failure_count=86
+- (burst) raw_fields.success_after_failures=true after 86 failures
+- (ioc_reputation) iocs ipv4 203.0.113.10 reputation=suspicious
 ```
 
-## Layout
-
-```
-constitution.md  spec.md  plan.md  tasks.md
-src/soc_triage/     package (models, ingest, rules, notes, report, cli, eval)
-tests/              pytest
-fixtures/alerts/    25 synthetic alerts in five category files
-fixtures/labels.json  severity labels for 15 of those alerts
-.env.example
-.cursor/rules/soc-triage.mdc
-```
-
-Label entries look like this:
-
-```json
-{"id": "SYN-BF-001", "severity": "critical"}
-```
-
-Severity values are `critical`, `high`, `medium`, `low`, and `info`.
-
-## Rules
-
-`score_alert` in `src/soc_triage/rules.py` is deterministic and does not use an API key. It starts from a category baseline, then applies IOC reputation, count thresholds, an incomplete-context cap (`low` plus `needs_review`), and an allowlist downgrade to `info`.
-
-```bash
-python -c "from soc_triage.ingest import default_alerts_dir, load_alerts; from soc_triage.rules import score_alert; alert = load_alerts(default_alerts_dir())[0]; result = score_alert(alert); print(alert.id, result.severity.value, result.confidence)"
-```
-
-## Eval
-
-`soc-triage eval` scores the labeled alerts with the rules engine and compares them to `fixtures/labels.json`. This is the real output on the bundled set:
+Full output of `soc-triage eval` on the bundled fixtures:
 
 ```text
 Synthetic/demo mode. This tool recommends severity and drafts notes; a human makes the final call. No auto-close, auto-block, or external notify.
@@ -168,20 +159,27 @@ Rows are labeled severity. Columns are predicted severity.
 No mismatches.
 ```
 
+## Resume blurb
+
+- Built a Python CLI that ranks 25 synthetic SOC alerts across 5 categories (brute force, phishing URL, malware hash, lateral movement, and policy noise) and drafts analyst notes a person can edit. Severity, confidence, and reasons come from deterministic rules. No API key.
+- `soc-triage run` prints a ranked summary (4 critical, 4 high, 5 medium, 5 low, 7 info on the bundled set). `soc-triage eval` reports exact-match accuracy and a confusion matrix for 15 labeled alerts.
+- 50 pytest tests pass with no secrets. The 15/15 (100%) eval score is not real-world accuracy: the rules were tuned on that same small synthetic set.
+
 ## Limitations
 
-- Exact-match accuracy on these 15 labels is 100% because the rules were tuned on that same synthetic set. It is not a measure of real-world detection performance. A held-out split belongs in T9, which grows the labeled set.
-- Notes are templates. There is no language-model call.
-- No live SIEM, EDR, or ticket write-back (out of scope for the MVP).
-- No automated containment. A human makes the final call.
-- Not for production security operations. Resume language should match the code, not a production SOC platform.
-- Sample data is synthetic. Do not drop real alerts into `fixtures/`.
+- Synthetic data only. Fixtures use RFC 5737 documentation addresses and RFC 2606 `example` domains. Do not drop real alerts or personal data into `fixtures/`.
+- The labeled set is 15 alerts. Ten of the 25 fixtures have no label and are excluded from accuracy.
+- The rules were tuned on those same labels, so 15/15 (100%) is not a measure of real-world detection performance. A held-out split is future work (T9).
+- No SIEM, EDR, or ticket integration. Nothing is auto-closed, blocked, or sent to another system.
+- Notes are templates. There is no language-model client yet (T7). `.env.example` lists optional variable names for that later work and is not required to run the demo.
 
-## Next step
+## Layout
 
-**T6 — README + architecture.** Add an architecture diagram, a resume-safe project blurb, and a demo a stranger can follow from a cold clone.
-
-```bash
-pytest
-soc-triage eval
+```
+constitution.md  spec.md  plan.md  tasks.md
+src/soc_triage/     ingest, rules, notes, report, cli, eval
+tests/              pytest (50 tests)
+fixtures/alerts/    25 synthetic alerts, five files
+fixtures/labels.json
+scripts/demo.sh
 ```

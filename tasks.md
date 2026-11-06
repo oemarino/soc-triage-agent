@@ -24,7 +24,7 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
   Compare predictions to labels; print accuracy + confusion-style summary.  
   **Done when:** `soc-triage eval` reports metrics on labeled set; documented in README.
 
-- [ ] **T6 — README + architecture**  
+- [x] **T6 — README + architecture**  
   Architecture diagram (mermaid or ascii), limitations, resume-safe project blurb, demo GIF/script.  
   **Done when:** cold clone instructions work for a stranger.
 
