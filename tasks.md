@@ -34,8 +34,8 @@ Ordered work items. Check boxes as PRs merge. One task ≈ one PR.
   Interface + OpenAI-compatible client; gated by env; falls back to template notes.  
   **Done when:** with key, notes enrich; without key, rules path unchanged.
 
-- [ ] **T8 — FastAPI read API**  
-  `POST /triage` accepts alert batch, returns results; OpenAPI.  
+- [x] **T8 — FastAPI read API**  
+  Optional `api` extra (`pip install -e ".[api]"`). `soc-triage serve` binds `127.0.0.1` by default. `GET /health`, `POST /triage` (one `Alert`), `POST /triage/batch` (at most 500), `GET /fixtures/demo`. OpenAPI at `/docs`. Same `build_report` path as the CLI. LLM notes stay off unless `llm_notes=true` or `serve --llm-notes`.  
   **Done when:** curl example in README; tests for happy path.
 
 ## P2 — Polish

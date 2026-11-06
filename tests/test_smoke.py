@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+from importlib.metadata import PackageNotFoundError, requires
 from pathlib import Path
+
+import pytest
 
 import soc_triage
 from soc_triage.cli import app, safety_banner
@@ -38,12 +41,25 @@ def test_cli_help_lists_later_commands() -> None:
     assert result.exit_code == 0
     assert "run" in result.stdout
     assert "eval" in result.stdout
+    assert "serve" in result.stdout
 
 
 def test_safety_banner_states_synthetic_and_human_review() -> None:
     text = safety_banner().lower()
     assert "synthetic" in text
     assert "human" in text
+
+
+def test_base_install_does_not_require_the_api_extra() -> None:
+    try:
+        rows = requires("soc-triage") or []
+    except PackageNotFoundError:
+        pytest.skip("soc-triage is not installed; extras are checked from package metadata")
+    base = [row for row in rows if "extra ==" not in row]
+    assert all("fastapi" not in row and "uvicorn" not in row and "httpx" not in row for row in base)
+    assert any("fastapi" in row and 'extra == "api"' in row for row in rows)
+    assert any("uvicorn" in row and 'extra == "api"' in row for row in rows)
+    assert any("fastapi" in row and 'extra == "dev"' in row for row in rows)
 
 
 def test_labels_file_is_documented_json() -> None:

@@ -9,7 +9,14 @@ from soc_triage.cli import safety_banner
 from soc_triage.ingest import load_alerts
 from soc_triage.models import Reason, Severity
 from soc_triage.notes import draft_note
-from soc_triage.report import RankedAlert, build_report, order_results, render_json, render_markdown
+from soc_triage.report import (
+    RankedAlert,
+    build_report,
+    order_results,
+    render_json,
+    render_markdown,
+    severity_counts,
+)
 from soc_triage.rules import score_alert
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,6 +93,13 @@ def test_markdown_summary_lists_required_columns() -> None:
 def test_markdown_counts_and_top_reasons() -> None:
     report = build_report(load_alerts(ALERTS), banner=safety_banner())
     text = render_markdown(report)
+    assert severity_counts(report.results) == {
+        "critical": 4,
+        "high": 4,
+        "medium": 5,
+        "low": 5,
+        "info": 7,
+    }
     assert "4 critical · 4 high · 5 medium · 5 low · 7 info" in text
     assert "failure_count=86" in text or "success_after_failures=true" in text
 

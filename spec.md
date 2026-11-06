@@ -35,10 +35,11 @@ T9 measures that held-out row on `fixtures/heldout/` (30 alerts, labeled before 
 ## Functional requirements
 1. **Alert schema** — id, timestamp, source, category, raw fields, optional IOCs
 2. **Rules engine** — deterministic severity scoring from category + field heuristics
-3. **Optional LLM assist** — `soc-triage run --llm-notes` may rewrite the draft note through an OpenAI-compatible chat endpoint. Off by default (`SOC_TRIAGE_LLM_PROVIDER=none`). Severity, confidence, needs_review, and reasons stay with the rules. Missing config, timeout, error, or invalid text falls back to the template note.
+3. **Optional LLM assist** — `soc-triage run --llm-notes` may rewrite the draft note through an OpenAI-compatible chat endpoint. Off by default (`SOC_TRIAGE_LLM_PROVIDER=none`). The local API uses the same gate: a request `llm_notes=true` flag or `soc-triage serve --llm-notes`, both default off. Severity, confidence, needs_review, and reasons stay with the rules. Missing config, timeout, error, or invalid text falls back to the template note.
 4. **Output** — JSON + human-readable summary per alert
 5. **Eval harness** — compare predicted severity to labels; print confusion summary
 6. **Safety banner** — every run states synthetic/demo mode
+7. **Local API** — optional extra. `GET /health`, `POST /triage` (one alert), `POST /triage/batch` (at most 500), `GET /fixtures/demo`, OpenAPI at `/docs`. Same rules and note fallback as the CLI. Loopback by default. No authentication.
 
 ## User stories
 - As an analyst, I can point the CLI at a fixture file and get a ranked triage list.

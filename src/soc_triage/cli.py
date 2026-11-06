@@ -2,6 +2,7 @@
 
 `run` triages a fixture file or directory with the rules path.
 `eval` compares those scores to a label file.
+`serve` exposes the same path on a local HTTP API when the api extra is installed.
 Every real run states synthetic/demo mode. No API key required.
 `--llm-notes` is off by default and is the only path that can call a model.
 """
@@ -20,8 +21,9 @@ from soc_triage.ingest import (
     load_alerts,
     load_labels,
 )
-from soc_triage.llm import OpenAICompatibleClient, config_warning, load_llm_settings
-from soc_triage.report import build_report, render_json, render_markdown
+from soc_triage.llm import SYNTHETIC_SEND_NOTICE, OpenAICompatibleClient, optional_note_client
+from soc_triage.notes import fallback_message
+from soc_triage.report import build_report, render_json, render_markdown, safety_banner
 
 app = typer.Typer(
     add_completion=False,
@@ -32,41 +34,43 @@ app = typer.Typer(
     ),
 )
 
-SAFETY_BANNER = (
-    "Synthetic/demo mode. This tool recommends severity and drafts notes; "
-    "a human makes the final call. No auto-close, auto-block, or external notify."
-)
-
 _FORMATS = {"markdown", "json"}
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
 
 
-def safety_banner() -> str:
-    """Banner required on every triage run (spec: safety banner)."""
-    return SAFETY_BANNER
+class ApiExtraError(RuntimeError):
+    """FastAPI or uvicorn is not installed."""
 
 
 def _note_rewriter(llm_notes: bool) -> OpenAICompatibleClient | None:
     """Build a client only when the flag and provider config both allow it."""
-    if not llm_notes:
-        return None
-    settings = load_llm_settings()
-    warning = config_warning(settings)
+    client, warning = optional_note_client(llm_notes)
     if warning is not None:
         typer.echo(warning, err=True)
         return None
-    typer.echo(
-        "Sending structured alert fields and rule reasons to the configured model. "
-        "Synthetic data only. Severity stays with the rules.",
-        err=True,
-    )
-    return OpenAICompatibleClient(settings)
+    if client is not None:
+        typer.echo(SYNTHETIC_SEND_NOTICE, err=True)
+    return client
 
 
 def _warn_note_fallback(alert_id: str, reason: str) -> None:
-    typer.echo(
-        f"LLM note for {alert_id} was not used ({reason}). Using the rule-based note.",
-        err=True,
-    )
+    typer.echo(fallback_message(alert_id, reason), err=True)
+
+
+def load_api_runtime():
+    """Import uvicorn and the app factory. Requires the api extra."""
+    try:
+        import uvicorn
+        from soc_triage.api import create_app
+    except ImportError as exc:
+        raise ApiExtraError(
+            'The API extra is not installed. Run: pip install -e ".[api]"'
+        ) from exc
+    return uvicorn, create_app
+
+
+def _is_loopback(host: str) -> bool:
+    return host.strip().lower() in _LOOPBACK_HOSTS
 
 
 @app.callback()
@@ -185,3 +189,66 @@ def eval_command(
             typer.echo(f"Could not write {json_path}: {exc}", err=True)
             raise typer.Exit(code=1) from exc
     typer.echo(render_eval_markdown(report), nl=False)
+
+
+@app.command("serve")
+def serve_command(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Interface to bind. Default is 127.0.0.1. This demo has no authentication.",
+    ),
+    port: int = typer.Option(
+        8000,
+        "--port",
+        min=1,
+        max=65535,
+        help="TCP port. Default is 8000.",
+    ),
+    llm_notes: bool = typer.Option(
+        False,
+        "--llm-notes",
+        help=(
+            "Rewrite draft notes with the configured model for every request. "
+            "Off by default. A request can also pass llm_notes=true. "
+            "Rules still set severity, confidence, needs_review, and reasons. "
+            "Missing config, timeout, or invalid text keeps the template note."
+        ),
+    ),
+) -> None:
+    """Serve the local triage API. Loopback only unless you change --host.
+
+    This demo does not authenticate callers. Add authentication before any
+    network exposure. Install the extra with: pip install -e ".[api]"
+    """
+    chosen = host.strip()
+    if not chosen:
+        typer.echo("Host is required.", err=True)
+        raise typer.Exit(code=2)
+
+    try:
+        uvicorn, create_app = load_api_runtime()
+    except ApiExtraError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(safety_banner(), err=True)
+    typer.echo(
+        f"Local demo API at http://{chosen}:{port} (docs at /docs). "
+        "No authentication. Synthetic alerts only.",
+        err=True,
+    )
+    if not _is_loopback(chosen):
+        typer.echo(
+            "Binding beyond loopback. This demo has no authentication. "
+            "Add auth before exposing it on a network.",
+            err=True,
+        )
+    if llm_notes:
+        _note_rewriter(True)
+    uvicorn.run(
+        create_app(llm_notes_default=llm_notes),
+        host=chosen,
+        port=port,
+        log_level="info",
+    )

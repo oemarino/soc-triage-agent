@@ -31,6 +31,11 @@ class ResolvedNote(NamedTuple):
     fallback_reason: str | None
 
 
+def fallback_message(alert_id: str, reason: str) -> str:
+    """Operator text when a model note is discarded and the template is kept."""
+    return f"LLM note for {alert_id} was not used ({reason}). Using the rule-based note."
+
+
 def draft_note(alert: Alert, result: TriageResult) -> str:
     """Template note. No network call and no API key.
 
