@@ -40,9 +40,11 @@ T9 measures that held-out row on `fixtures/heldout/` (30 alerts, labeled before 
 5. **Eval harness** — compare predicted severity to labels; print confusion summary
 6. **Safety banner** — every run states synthetic/demo mode
 7. **Local API** — optional extra. `GET /health`, `POST /triage` (one alert), `POST /triage/batch` (at most 500), `GET /fixtures/demo`, OpenAPI at `/docs`. Same rules and note fallback as the CLI. Loopback by default. No authentication.
+8. **Minimal UI** — `GET /` on that same process is one static HTML page. Paste JSON, upload a file, or load bundled fixtures. The page calls `POST /triage/batch`. The table is ranked, highest severity first, and color-coded. A row shows cited rule reasons, the draft note, and `note_source`. A model note is labeled `AI-drafted, analyst review required.` The model checkbox is off unless the analyst checks it. This is not case management.
 
 ## User stories
 - As an analyst, I can point the CLI at a fixture file and get a ranked triage list.
+- As an analyst, I can open the local page, load the sample fixtures, and read a ranked list with the reasons and draft note for one alert.
 - As a reviewer, I can open `spec.md` / `plan.md` and understand architecture in under 5 minutes.
 - As a hiring manager, I can clone, run fixtures, and see tests pass without API keys (rules-only path).
 

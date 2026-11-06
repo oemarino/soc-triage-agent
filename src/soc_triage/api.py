@@ -4,6 +4,10 @@ Install the extra with ``pip install -e ".[api]"``. The process binds
 loopback from ``soc-triage serve`` and does not authenticate callers.
 Add authentication before any network exposure. This is a demo, not a SIEM.
 
+``GET /`` is one static HTML page. It posts alert JSON to
+``POST /triage/batch``. ``GET /fixtures/sample`` returns the bundled alerts
+unscored so that page can load them and post the same list.
+
 ``POST /triage`` and ``POST /triage/batch`` call ``report.build_report``,
 so severity, confidence, needs_review, reasons, and notes match
 ``soc-triage run``. LLM notes stay off unless a request opts in or the
@@ -14,11 +18,12 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from soc_triage import __version__
@@ -46,7 +51,17 @@ Severity, confidence, needs_review, and reasons come from the rules engine.
 A model may rewrite the note only when the request sets llm_notes=true or
 the server was started with --llm-notes, and only when provider settings are
 complete. Missing config, timeout, or invalid text keeps the template note.
+
+GET / serves one static HTML page for this same local demo. The page posts
+alert JSON to POST /triage/batch. GET /fixtures/sample returns the bundled
+alerts unscored so the page can load them. The page's model checkbox is off.
+It sends llm_notes=true only when that box is checked, and only a configured
+SOC_TRIAGE_LLM_PROVIDER can rewrite the note. The page does not collect an
+API key. The process still binds 127.0.0.1 by default, still has no
+authentication, and is still not a production SIEM.
 """.strip()
+
+_INDEX_PATH = Path(__file__).resolve().parent / "static" / "index.html"
 
 
 class HealthResponse(BaseModel):
@@ -193,7 +208,23 @@ def _register_handlers(app: FastAPI) -> None:
         return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
+def _read_index() -> str:
+    try:
+        return _INDEX_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="UI page is missing") from exc
+
+
 def _register_routes(app: FastAPI) -> None:
+    @app.get("/", response_class=HTMLResponse)
+    def ui_index() -> HTMLResponse:
+        """Serve the local demo page.
+
+        One static HTML file. The page posts alert JSON to ``POST /triage/batch``.
+        It does not authenticate the caller and it does not collect an API key.
+        """
+        return HTMLResponse(_read_index())
+
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
         """Report that the local demo process is up."""
@@ -244,6 +275,21 @@ def _register_routes(app: FastAPI) -> None:
         """
         _reject_duplicates(alerts)
         return _batch(_triage(alerts, llm_notes=_enabled(request, llm_notes)))
+
+    @app.get("/fixtures/sample", response_model=list[Alert])
+    def fixtures_sample() -> list[Alert]:
+        """Return the bundled synthetic alerts in ``fixtures/alerts``, unscored.
+
+        The demo page loads this list and posts it to ``POST /triage/batch``.
+        This route does not score and does not call a model.
+        """
+        try:
+            return load_alerts(default_alerts_dir())
+        except FixtureLoadError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Bundled fixtures could not be loaded",
+            ) from exc
 
     @app.get("/fixtures/demo", response_model=BatchTriageResponse)
     def fixtures_demo(request: Request, llm_notes: bool = False) -> BatchTriageResponse:
