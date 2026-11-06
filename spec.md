@@ -35,7 +35,7 @@ T9 measures that held-out row on `fixtures/heldout/` (30 alerts, labeled before 
 ## Functional requirements
 1. **Alert schema** — id, timestamp, source, category, raw fields, optional IOCs
 2. **Rules engine** — deterministic severity scoring from category + field heuristics
-3. **Optional LLM assist** — enrich draft notes; never sole source of severity
+3. **Optional LLM assist** — `soc-triage run --llm-notes` may rewrite the draft note through an OpenAI-compatible chat endpoint. Off by default (`SOC_TRIAGE_LLM_PROVIDER=none`). Severity, confidence, needs_review, and reasons stay with the rules. Missing config, timeout, error, or invalid text falls back to the template note.
 4. **Output** — JSON + human-readable summary per alert
 5. **Eval harness** — compare predicted severity to labels; print confusion summary
 6. **Safety banner** — every run states synthetic/demo mode
@@ -45,6 +45,6 @@ T9 measures that held-out row on `fixtures/heldout/` (30 alerts, labeled before 
 - As a reviewer, I can open `spec.md` / `plan.md` and understand architecture in under 5 minutes.
 - As a hiring manager, I can clone, run fixtures, and see tests pass without API keys (rules-only path).
 
-## Open questions (resolve in plan)
-- LLM provider: optional OpenAI-compatible vs fully offline
-- Categories to seed: brute force, phishing URL, malware hash, lateral movement, policy noise
+## Resolved in plan
+- LLM provider: rules-only offline path by default. Optional OpenAI-compatible notes (T7), including xAI Grok, OpenAI, and a local Ollama `/v1` server. No LLM SDK in the base install.
+- Categories seeded: brute force, phishing URL, malware hash, lateral movement, policy noise

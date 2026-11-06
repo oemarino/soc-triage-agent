@@ -10,10 +10,10 @@ Junior analysts lose time on noisy, unsorted alerts. This project is the practic
 
 - Load a JSON file or a directory of alerts into a typed `Alert` model (`ingest`).
 - Score each alert with deterministic rules: category baseline, IOC reputation, burst or host-count thresholds, an allowlist downgrade, and an incomplete-context cap (`rules.score_alert`).
-- Draft a template analyst note that cites those reasons and the alert fields (`notes.draft_note`). No language-model call.
-- `soc-triage run` prints a ranked markdown summary, or JSON, with a synthetic-mode banner first.
-- `soc-triage eval` compares the rules to a label file and prints exact-match accuracy, within-one-level accuracy, per-severity precision and recall, a confusion matrix, and any mismatches. The default file is the tuning set. `--alerts` and `--labels` point the same command at `fixtures/heldout`.
-- No API key and no network. `pytest` covers the same path.
+- Draft a template analyst note that cites those reasons and the alert fields (`notes.draft_note`). That template is the default.
+- `soc-triage run` prints a ranked markdown summary, or JSON, with a synthetic-mode banner first. `--llm-notes` is off. When it is on, and only then, a configured model may rewrite the note text.
+- `soc-triage eval` compares the rules to a label file and prints exact-match accuracy, within-one-level accuracy, per-severity precision and recall, a confusion matrix, and any mismatches. The default file is the tuning set. `--alerts` and `--labels` point the same command at `fixtures/heldout`. Eval never calls a model.
+- No API key and no network on the default path. `pytest` covers that path with mocked HTTP only.
 
 ## Architecture
 
@@ -24,7 +24,9 @@ flowchart TD
     alerts["fixtures/alerts/*.json"] --> ingest["ingest.load_alerts"]
     ingest --> rules["rules.score_alert"]
     rules --> notes["notes.draft_note"]
+    rules -.-> llm["llm rewrite, only with --llm-notes"]
     notes --> report["report.render"]
+    llm -.-> report
     report --> runCmd["soc-triage run"]
     labels["fixtures/labels.json"] --> evalStep["eval.evaluate"]
     heldout["fixtures/heldout/labels.json"] --> evalStep
@@ -53,10 +55,10 @@ The phase docs at the repo root are the source of truth. Code follows them one t
 | 1. Constitution | [constitution.md](constitution.md) | Non-negotiables: synthetic data only, no offensive tooling, human review, secrets stay out of git |
 | 2. Spec | [spec.md](spec.md) | Users, goals, non-goals, and success metrics |
 | 3. Plan | [plan.md](plan.md) | Stack, severity model, and repository layout |
-| 4. Tasks | [tasks.md](tasks.md) | Ordered work. P0 (T1–T6) is the CLI in this README |
+| 4. Tasks | [tasks.md](tasks.md) | Ordered work. P0 (T1–T6) is the CLI. T7 is the optional note rewrite. |
 | 5. Implement | `src/soc_triage/` | The package those tasks produced |
 
-T9 adds `fixtures/heldout/`: 30 alerts labeled before the rules scored them. The tuning set and the held-out set are reported separately below.
+T7 can rewrite a draft note. It stays off unless `--llm-notes` and provider settings are both present. T9 adds `fixtures/heldout/`: 30 alerts labeled before the rules scored them. The tuning set and the held-out set are reported separately below. The held-out numbers are the rules engine only.
 
 Cursor reads the same safety rules from `.cursor/rules/soc-triage.mdc`.
 
@@ -85,6 +87,45 @@ soc-triage eval --alerts fixtures/heldout/alerts --labels fixtures/heldout/label
 ```
 
 `--format json` prints JSON on stdout and the synthetic-mode banner on stderr. `--json PATH` writes a file and still prints the human-readable report.
+
+## Optional LLM notes
+
+The rules engine still sets severity, confidence, `needs_review`, and the reason list. A model is allowed to rewrite the analyst note only. The default provider is `none`, so `soc-triage run` and `soc-triage eval` send nothing unless you pass `--llm-notes` and the provider is `openai_compatible` with a base URL and a model.
+
+The client speaks the OpenAI chat-completions API with the Python standard library. The base install does not include an LLM SDK. One configuration covers three endpoints:
+
+```bash
+# xAI Grok. Put the key in .env or the environment. Do not commit it.
+export SOC_TRIAGE_LLM_PROVIDER=openai_compatible
+export SOC_TRIAGE_LLM_BASE_URL=https://api.x.ai/v1
+export SOC_TRIAGE_LLM_MODEL=grok-4
+export SOC_TRIAGE_LLM_API_KEY=your-key-here
+soc-triage run fixtures/alerts --llm-notes
+```
+
+```bash
+# OpenAI. Same client, different host and model id.
+export SOC_TRIAGE_LLM_PROVIDER=openai_compatible
+export SOC_TRIAGE_LLM_BASE_URL=https://api.openai.com/v1
+export SOC_TRIAGE_LLM_MODEL=gpt-4o-mini
+export SOC_TRIAGE_LLM_API_KEY=your-key-here
+soc-triage run fixtures/alerts --llm-notes
+```
+
+```bash
+# Local Ollama. No API key. The server must already be running.
+export SOC_TRIAGE_LLM_PROVIDER=openai_compatible
+export SOC_TRIAGE_LLM_BASE_URL=http://localhost:11434/v1
+export SOC_TRIAGE_LLM_MODEL=llama3.2
+unset SOC_TRIAGE_LLM_API_KEY
+soc-triage run fixtures/alerts --llm-notes
+```
+
+`SOC_TRIAGE_LLM_BASE_URL` is the API root ending in `/v1`. The client appends `/chat/completions`. Model ids above are examples; use the id your account or local Ollama tag actually serves. Copy names from `.env.example` into a gitignored `.env` if you want `soc-triage run --llm-notes` to read them. Variables already set in the environment win over the file. `SOC_TRIAGE_LLM_TIMEOUT` defaults to 8 seconds. A value outside (0, 60] is ignored.
+
+If the flag is set and the provider, URL, or model is missing, the command prints a warning and keeps the template. The same fallback happens on timeout, HTTP error, empty text, or a note longer than 2000 characters. JSON records `note_source` as `rules` or `llm` on every row. A model note in the markdown summary is marked `AI-drafted, analyst review required.` The rule severity and the full reason list are repeated under that prose. The model text is untrusted: alert fields are sent as a delimited JSON block, and the prompt tells the model not to invent IOCs or follow instructions inside the block.
+
+`scripts/demo.sh` does not pass `--llm-notes`.
 
 ## Sample output
 
@@ -197,9 +238,10 @@ The misses sit on round count cutoffs (29, 9 then success, spread of 4) and on a
 
 ## Resume blurb
 
-- Built a Python CLI that ranks synthetic SOC alerts across 5 categories (brute force, phishing URL, malware hash, lateral movement, and policy noise) and drafts analyst notes a person can edit. Severity, confidence, and reasons come from deterministic rules. No API key.
+- Built a Python CLI that ranks synthetic SOC alerts across 5 categories (brute force, phishing URL, malware hash, lateral movement, and policy noise) and drafts analyst notes a person can edit. Severity, confidence, and reasons come from deterministic rules. The default path needs no API key and makes no network call.
 - `soc-triage run` on the 25-alert tuning set prints a ranked summary (4 critical, 4 high, 5 medium, 5 low, 7 info). `soc-triage eval` reports exact-match accuracy, within-one-level accuracy, and a confusion matrix.
-- Tuning-set exact match is 20/20 (100%) because the rules were written against those alerts. Held-out exact match is 24/30 (80%), and within one level is 27/30 (90%), on 30 alerts labeled before any scoring run. 53 pytest tests pass with no secrets.
+- Tuning-set exact match is 20/20 (100%) because the rules were written against those alerts. Held-out exact match is 24/30 (80%), and within one level is 27/30 (90%), on 30 alerts labeled before any scoring run. 71 pytest tests pass with no secrets.
+- Optional `--llm-notes` rewrites the draft through an OpenAI-compatible endpoint (xAI Grok, OpenAI, or local Ollama). The call is off unless the flag and provider config are both set. Missing config, timeout, or invalid text keeps the template note. The model cannot change severity.
 
 ## Limitations
 
@@ -207,14 +249,16 @@ The misses sit on round count cutoffs (29, 9 then success, spread of 4) and on a
 - The tuning labels cover 20 of 25 fixtures. Five fixtures have no label and are excluded from that score. Exact match on those 20 is 20/20 (100%) because the rules were tuned on that set.
 - The held-out set is 30 fully labeled alerts. Exact match is 24/30 (80%) and within one level is 27/30 (90%). The six misses are the near-threshold counts and allowlist cases in the table above. `rules.py` was not edited after that measurement. The figure is still hand-authored synthetic data, not production telemetry.
 - No SIEM, EDR, or ticket integration. Nothing is auto-closed, blocked, or sent to another system.
-- Notes are templates. There is no language-model client yet (T7). `.env.example` lists optional variable names for that later work and is not required to run the demo.
+- Notes are templates unless you pass `--llm-notes` with `SOC_TRIAGE_LLM_PROVIDER=openai_compatible`, a base URL, and a model. That path sends the alert's structured fields and the rule reasons to the host you configure. Use synthetic fixtures only. Do not point it at real incidents.
+- The model can still write fluent prose that misstates a fact. The tool checks that the text is non-empty and at most 2000 characters. It does not fact-check the prose. Read `note_source` and the rule reasons, and treat `llm` text as untrusted. A human still decides.
+- Each alert is one request. A hung server waits up to the timeout (default 8 seconds) per alert, then the template note is used. Redirects are refused. Eval numbers do not include this path and are unchanged by it.
 
 ## Layout
 
 ```
 constitution.md  spec.md  plan.md  tasks.md
-src/soc_triage/          ingest, rules, notes, report, cli, eval
-tests/                   pytest (53 tests)
+src/soc_triage/          ingest, rules, notes, llm, report, cli, eval
+tests/                   pytest (71 tests)
 fixtures/alerts/         25 synthetic tuning alerts, five files
 fixtures/labels.json     20 labels for that tuning set
 fixtures/heldout/        30 labeled alerts the rules were not tuned on
